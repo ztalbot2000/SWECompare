@@ -16,7 +16,9 @@ let fs = require("fs");
 var nodes=[];
 var includeComments = false;  // default
 var includeEquations = false; // default
-var doReverse = true;         // default
+var doReverse = false;        // default
+var doVariables = false;
+var doDiff = false;
 
 // A great regex debugger site:
 // https://regex101.com/r/bE3c0x/5
@@ -34,28 +36,100 @@ function processOpts()
         case '-ie':
           includeEquations = true;
           break;
-        case '-nr':
-          doReverse = false;
+        case '-r':
+          doReverse = true;
+          break;
+        case '-v':
+          if ( doDiff == true )
+          {
+             console.error( `-v and -d are mutually exclusive` );
+             process.exit( 1 );
+          }
+          doVariables = true;
+          doDiff = false;
+          break;
+        case '-d':
+          if ( doVariables == true )
+          {
+             console.error( `-v and -d are mutually exclusive` );
+             process.exit( 1 );
+          }
+          doDiff = true;
+          doVariables = false;
           break;
         case '-h':
           console.log(`Description:`);
           console.log(`  Check SolidWorks global equation files for differences OR`);
           console.log(`  find unused variables in an equation file.`);
           console.log(``);
-          console.log(`Example1: Find global variable differences between files`);
-          console.log(`${process.argv[0]} [-ie] [-ic] [-nr] file1 file2`);
+          console.log(`Usage:`);
+          console.log(`${process.argv[0]} [-d] [-v] [-ie] [-ic] [-nr] file1 file2 file3 ...`);
           console.log(`   Where:`);
-          console.log(`     -ie -Include equations (Variables like "d1@Something"`);
-          console.log(`     -ic -Include comments in differences`);
-          console.log(`     -nr -Only check file1 vs file2. Not file2 vs file1`);
+          console.log(`     -d  -find variables from file1 not in other files with different values (default)`);
+          console.log(`        Options that affect -d only`);
+          console.log(`           -ie -Include equations (Variables like "d1@Something"`);
+          console.log(`           -ic -Include comments in differences`);
+          console.log(`           -r  -Check file1 vs file2 and file2 vs file1`);
+          console.log(`                Valid for when only two files are specified`);
+          console.log(`     -v  -find missing variables from file1 not in other files`);
           console.log(``);
-          console.log(`Example2: Find unused variables in an equation file`);
-          console.log(`${process.argv[0]} file1`);
+          console.log(`Example1: Find global variable differences between files`);
+          console.log(`${process.argv[0]} file1 file2`);
+          console.log(``);
+          console.log(`Example2: Find global variable differences between multiple files`);
+          console.log(`${process.argv[0]} file1 file2 file2`);
+          console.log(``);
+          console.log(`Example3: Find unused variables in an equation file`);
+          console.log(`${process.argv[0]} -v file1`);
+          console.log(``);
+          console.log(`Example2: Find unused variables in file1 that are not in file2 or file3`);
+          console.log(`${process.argv[0]} -v file1 file2 file3`);
+          process.exit(0);
           process.exit(0);
           break;
         default:
           console.log(`Adding file: ${process.argv[index]}`);
           nodes.push( {FILENAME: process.argv[index], GLOBALS:[]} );
+      }
+   }
+
+   // backward compability
+   // console.log(`doVariables=${doVariables}`);
+   // console.log(`doDiff=${doDiff}`);
+   // console.log(`nodes.length=${nodes.length}`);
+   if ( doVariables == false && doDiff == false && nodes.length == 1)
+   {
+      doVariables = true;
+      // console.log(`Setting doVariables=${doVariables}`);
+   }
+
+   // Set the default if not specified
+   if ( doVariables == false && doDiff == false )
+   {
+      doDiff = true;
+      // console.log(`Setting doDiff=${doDiff}`);
+   }
+
+   // diff has certain options, check them
+   if ( doDiff == true )
+   {
+      if ( nodes.length < 2 )
+      {
+         console.error( `-d must specify at least two files`);
+         process.exit( 1 );
+      }
+      if ( doReverse == true && nodes.length !=2 )
+      {
+         console.error( `-r only valid for two files`);
+         process.exit( 1 );
+      }
+   }
+   if ( doVariables == true )
+   {
+      if ( nodes.length < 1 )
+      {
+         console.error( `-v must specify at least one file`);
+         process.exit( 1 );
       }
    }
 }
@@ -136,12 +210,14 @@ function compareEquation( variable, value, comment, nodeRecord )
       }
 
       if ( includeComments == true )
+      {
          if ( nodeData[ dataFoundAtIndex].COMMENT !== comment )
          {
            console.warn( `variable: ${ variable } matches but not the comment in ${ nodeFile }`);
            console.warn( `${ nodeData[ dataFoundAtIndex ].COMMENT } != ${ comment }`);
            rc = false;
          }
+      }
    }
    return rc;
 }
@@ -157,22 +233,27 @@ function compareFiles()
    }
 
    let d1 = nodes[ 0 ].GLOBALS;
-   let d2 = nodes[ 1 ].GLOBALS;
 
    // do the first file to the second
    for ( let d1Index = 0; d1Index < d1.length; d1Index++ )
    {
-      if ( ! compareEquation( d1[d1Index].VARIABLE, d1[ d1Index ].VALUE, d1[ d1Index ].COMMENT, nodes[1] ) )
-         rc = false;
+      for ( let fileIndex = 1; fileIndex < nodes.length; fileIndex++ )
+      {
+         if ( ! compareEquation( d1[d1Index].VARIABLE, d1[ d1Index ].VALUE, d1[ d1Index ].COMMENT, nodes[fileIndex] ) )
+            rc = false;
+      }
    }
 
    // do the second file to the first
    if ( doReverse )
+   {
+      let d2 = nodes[ 1 ].GLOBALS;
       for ( let d2Index = 0; d2Index < d2.length; d2Index++ )
       {
          if ( ! compareEquation( d2[d2Index].VARIABLE, d2[ d2Index ].VALUE, d2[ d2Index ].COMMENT, nodes[0] ) )
             rc = false;
       }
+   }
 
    if ( rc  == true )
       console.log("All Passed");
@@ -182,10 +263,7 @@ function compareFiles()
 
 function searchForUnusedGlobal( variable, nodeRecord )
 {
-   let rc = true;
-   let dataFoundAtIndex = -1;
    let nodeData = nodeRecord.GLOBALS;
-   let nodeFile = nodeRecord.FILENAME;
 
    // Global variables like "d1@whatever" will never be in equations, I believe
    const equationMatch = variable.match(/([@])/);
@@ -197,56 +275,58 @@ function searchForUnusedGlobal( variable, nodeRecord )
       const match = nodeData[ dataIndex ].VALUE.match(new RegExp('(' + variable + ')'));
       if ( match !== null )
       {
-         dataFoundAtIndex = dataIndex;
          //console.log( `variable: ${variable} found at index ${ dataFoundAtIndex }`);
-         break;
+         return true;
       }
    }
-   if ( dataFoundAtIndex == -1  )
-   {
-      console.warn( `variable: ${variable} was unused in ${ nodeFile }`);
-      rc = false;
-   }
-   return rc;
+   return false;
 }
 
 function doGlobalVariableSearch()
 {
-   let rc = true;
-
-   if ( nodes.length != 1 )
-   {
-      console.error(`Finding unused globals needs 1 file`);
-      process.exit(1);
-   }
+   let rc = false;
+   let finalRc = true;
 
    let d1 = nodes[ 0 ].GLOBALS;
 
-   // Search first file for unused globals
+   // Over all the variables in the first file
    for ( let d1Index = 0; d1Index < d1.length; d1Index++ )
    {
-      if ( ! searchForUnusedGlobal( d1[d1Index].VARIABLE, nodes[0] ) )
-         rc = false;
+      let variable = d1[d1Index].VARIABLE;
+      // Search all files for the variable in the values of the record
+      for ( let fileIndex = 0; fileIndex < nodes.length; fileIndex++ )
+      {
+         if ( searchForUnusedGlobal( d1[d1Index].VARIABLE, nodes[fileIndex] ) == true )
+         {
+            rc = true;
+            // Continue if the variable was found once
+            fileIndex = nodes.length;
+         }
+      }
+      // log the failure
+      if ( rc == false )
+      {
+         // The overall rc is now a fail
+         finalRc = false;
+         console.warn( `variable: ${variable} was unused in ${ nodes[0].FILENAME }`);
+      }
    }
 
-   if ( rc  == true )
-      console.log("No unused globals found");
-   else
+   if ( finalRc == false )
       console.log("Some unused globals found");
+   else
+      console.log("No unused globals found");
 }
 
 processOpts();
 readInFile();
 
-if ( nodes.length == 1 )
+if ( doVariables == true)
 {
   doGlobalVariableSearch();
-} else if ( nodes.length == 2 )
+}
+if ( doDiff == true )
 {
    compareFiles();
-} else
-{
-   console.error(`No files specified`);
-   process.exit(1);
 }
 process.exit(0);

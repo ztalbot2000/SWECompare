@@ -5,7 +5,9 @@
 ## Table of Contents
 * [**About SWECompare**](#about-swecompare)
 * [**How to use SWECompare to compare two equation files**](#how-to-use-swecompare-to-compare-two-equation-files)
+* [**How to use SWECompare to compare multiple equation files with the first**](#how-to-use-swecompare-to-compare-multiple-equation-files-with-the-first)
 * [**How to use SWECompare to find unused variables**](#how-to-use-swecompare-to-find-unused-variables)
+* [**How to use SWECompare to find unused variables that may be defined in other files**](#how-to-use-swecompare-to-find-unused-variables-that-may-be-defined-in-other-files)
 * [**License**](#license)
 
 <BR><BR>
@@ -14,7 +16,7 @@
 So why not use diff? Well?<BR>
 <UL>
 <LI> I needed the ability to ignore missing comments.</LI>
-<LI> I needed the ability to audit for unused variables.</LI>
+<LI> I needed the ability to audit for unused variables that may be in an equation file or maybe another.</LI>
 <LI> Exported files can contain different equations like "d1@Something" which needs to be ignored</LI>
 </UL>
 
@@ -29,9 +31,17 @@ For Example:
 ```
 <UL>
 </LI>To ignore comments that may be different, specify -ic
-</LI>By default file2 is also compared with file1. This can be turned off by specifying: -nr
+</LI>To compare file2 with file1 also specify -r (Valid for two files only)
 </UL>
 
+## How to use SWECompare to compare multiple equation files with the first
+&nbsp;&nbsp;&nbsp; Run SWECompare specifying multiple equation files.
+
+<BR><BR>
+For Example:
+```
+   SWECompare equationsFile1.txt equationsFile2.txt equationsFile3
+```
 <BR><BR>
 ## How to use SWECompare to find unused variables
 &nbsp;&nbsp;&nbsp; Run SWECompare specifying a single equations files.
@@ -40,6 +50,16 @@ For Example:
 For Example:
 ```
    SWECompare equationsFile.txt
+```
+
+<BR><BR>
+## How to use SWECompare to find unused variables that may be defined in other files
+&nbsp;&nbsp;&nbsp; Run SWECompare specifying a single equations files.
+
+<BR><BR>
+For Example:
+```
+   SWECompare -v equationsFile.txt anotherEquationsFile.txt orEvenAnotherEquationsFile.txt
 ```
 
 <BR><BR>

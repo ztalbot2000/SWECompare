@@ -43,6 +43,6 @@
       "doBats": "bats",
       "bats": "a(){ npm run doBats $*; };a",
       "batsDebug": "bats -x",
-      "test": "npm run allBats && npm run lint"
+      "test": "npm run lint && npm run allBats"
    }
 }
