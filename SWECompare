@@ -102,11 +102,13 @@ function compareEquation( variable, value, comment, nodeRecord )
    let rc = true;
 
    // Only check if variable is an equation like "d1@whatever" if asked.
-   if ( includeEquations == true )
+   if ( includeEquations == false )
    {
-      const equationMatch = variable.match(/([@])/);
-      if ( !equationMatch || !equationMatch.length )
+      const equationMatch = variable.match(/@/);
+      if ( equationMatch !== null )
+      {
          return true;
+      }
    }
 
    let dataFoundAtIndex = -1;

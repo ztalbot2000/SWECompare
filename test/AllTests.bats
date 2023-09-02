@@ -55,3 +55,14 @@ run node ../SWECompare -ic testData/equations.txt testData/equationsMissingComme
    assert_equal "${#lines[@]}" 9
 }
 
+@test "Test Equations in two files, second has missing \"D1@Something\"" {
+run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
+   assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
+   assert_equal "${lines[2]}" "Reading file: testData/equations.txt"
+   assert_equal "${lines[3]}" "Reading file: testData/equationsMissingEquation.txt"
+   assert_equal "${lines[4]}" "All Passed"
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 5
+}
