@@ -1,0 +1,48 @@
+{
+   "name": "SWECompare",
+   "displayName": "Solid Works Equation File Comparison Tool",
+   "description": "Checks equations files for equivalency or unused variables",
+   "license": "MIT",
+   "version": "1.0.0",
+   "author": {
+      "name": "John Talbot"
+   },
+   "repository": {
+      "type": "git",
+      "url": "git://github.com/ztalbot2000/SWECompare.git"
+   },
+   "homepage": "https://github.com/ztalbot2000/SWECompare#readme",
+   "devDependencies": {
+      "bats": "^1.5.0",
+      "bats-assert": "github:ztombol/bats-assert",
+      "bats-support": "github:ztombol/bats-support",
+      "eslint": "^8.1.0",
+      "mocha": "^9.1.3"
+   },
+   "directories": {
+      "test": "test",
+      "test": "tools"
+   },
+   "engines": {
+      "node": "^14.18.2 || ^16.13.1"
+   },
+   "keywords": [
+      "SolidWorks",
+      "equation",
+      "global",
+      "unused",
+      "audit",
+      "compare"
+   ],
+   "scripts": {
+      "pretest": "if [ ! -d 'node_modules' ];then printf ' test is only done in a development environment\n';exit 1; fi",
+      "lint": "npm run eslint",
+      "eslint": "eslint  SWECompare",
+      "eslint:onchange": "./node_modules/onchange/dist/bin.js SWECompare -- ./tools/lintIt '{{ file }}'",
+      "allBats": "a(){ npm run doBats test/*.bats; };a",
+      "doBats": "bats",
+      "bats": "a(){ npm run doBats $*; };a",
+      "batsDebug": "bats -x",
+      "test": "npm run allBats && npm run lint"
+   }
+}

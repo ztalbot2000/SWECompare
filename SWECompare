@@ -1,0 +1,250 @@
+#!node
+//"use strict";
+
+// File System utilities
+let fs = require("fs");
+
+
+// parsed form will be in the following format
+//var sample_nodes = [{ FILENAME: "",
+//                      GLOBALS: [{VARIABLE: "", VALUE: "", COMMENT: "" } ]
+//                    },
+//                    { FILENAME: "",
+//                      GLOBALS: [{VARIABLE: "", VALUE: "", COMMENT: "" } ]
+//                    }
+//                   ];
+var nodes=[];
+var includeComments = false;  // default
+var includeEquations = false; // default
+var doReverse = true;         // default
+
+// A great regex debugger site:
+// https://regex101.com/r/bE3c0x/5
+//
+
+function processOpts()
+{
+   for (let index=2; index<process.argv.length; index++)
+   {
+      switch (process.argv[index])
+      {
+        case '-ic':
+          includeComments = true;
+          break;
+        case '-ie':
+          includeEquations = true;
+          break;
+        case '-nr':
+          doReverse = false;
+          break;
+        case '-h':
+          console.log(`Description:`);
+          console.log(`  Check SolidWorks global equation files for differences OR`);
+          console.log(`  find unused variables in an equation file.`);
+          console.log(``);
+          console.log(`Example1: Find global variable differences between files`);
+          console.log(`${process.argv[0]} [-ie] [-ic] [-nr] file1 file2`);
+          console.log(`   Where:`);
+          console.log(`     -ie -Include equations (Variables like "d1@Something"`);
+          console.log(`     -ic -Include comments in differences`);
+          console.log(`     -nr -Only check file1 vs file2. Not file2 vs file1`);
+          console.log(``);
+          console.log(`Example2: Find unused variables in an equation file`);
+          console.log(`${process.argv[0]} file1`);
+          process.exit(0);
+          break;
+        default:
+          console.log(`Adding file: ${process.argv[index]}`);
+          nodes.push( {FILENAME: process.argv[index], GLOBALS:[]} );
+      }
+   }
+}
+
+function readInFile()
+{
+   for ( let fileIndex = 0; (fileIndex < nodes.length ); fileIndex++ )
+   {
+      console.log(`Reading file: ${nodes[fileIndex].FILENAME}`);
+      let allLines;
+      try {
+
+         allLines =  fs.readFileSync( nodes[fileIndex].FILENAME , "utf8" );
+      } catch ( error )
+      {
+         // Here you get the error when the file was not found,
+         // but you also get any other error
+         console.error( `Cannot open: ${ nodes[fileIndex].FILENAME }` );
+         process.exit(1);
+      }
+      const lines = allLines.split('\n')
+
+      lines.forEach( function( line, lineIndex)
+      {
+         if (line === "")
+            return;
+
+         const regexp = /^.*?("[^"]*").*?=.*?([^']*)(.*)/;
+         const arrayMatch = line.match(regexp);
+         if ( !arrayMatch || !arrayMatch.length )
+         {
+            console.warn( `Line ${ lineIndex } not a valid value ${ line }` );
+            process.exit(1);
+         }
+         nodes[ fileIndex ].GLOBALS.push(
+            { VARIABLE: arrayMatch[1], VALUE: arrayMatch[2].replace(/[\n\r]+$/, ""), COMMENT: arrayMatch[3].replace(/\n+$/, "")}
+         );
+      });
+   }
+}
+
+function compareEquation( variable, value, comment, nodeRecord )
+{
+   let rc = true;
+
+   // Only check if variable is an equation like "d1@whatever" if asked.
+   if ( includeEquations == true )
+   {
+      const equationMatch = variable.match(/([@])/);
+      if ( !equationMatch || !equationMatch.length )
+         return true;
+   }
+
+   let dataFoundAtIndex = -1;
+   let nodeData= nodeRecord.GLOBALS;
+   let nodeFile= nodeRecord.FILENAME;
+   for ( let dataIndex = 0; dataIndex < nodeData.length; dataIndex++ )
+   {
+      if ( nodeData[dataIndex].VARIABLE == variable)
+      {
+         dataFoundAtIndex = dataIndex;
+         break;
+      }
+   }
+   if ( dataFoundAtIndex == -1  )
+   {
+      console.warn( `variable: ${variable} not found in ${ nodeFile }`);
+      rc = false;
+   } else
+   {
+      if ( nodeData[ dataFoundAtIndex ].VALUE !== value )
+      {
+        console.warn( `variable: ${variable} matches but not the value in ${ nodeFile }`);
+        console.warn( `${nodeData[ dataFoundAtIndex ].VALUE} != ${ value }`);
+        rc = false;
+      }
+
+      if ( includeComments == true )
+         if ( nodeData[ dataFoundAtIndex].COMMENT !== comment )
+         {
+           console.warn( `variable: ${ variable } matches but not the comment in ${ nodeFile }`);
+           console.warn( `${ nodeData[ dataFoundAtIndex ].COMMENT } != ${ comment }`);
+           rc = false;
+         }
+   }
+   return rc;
+}
+
+function compareFiles()
+{
+   let rc = true;
+
+   if ( nodes.length < 2 )
+   {
+      console.error(`Must compare at least two global equation files`);
+      process.exit(1);
+   }
+
+   let d1 = nodes[ 0 ].GLOBALS;
+   let d2 = nodes[ 1 ].GLOBALS;
+
+   // do the first file to the second
+   for ( let d1Index = 0; d1Index < d1.length; d1Index++ )
+   {
+      if ( ! compareEquation( d1[d1Index].VARIABLE, d1[ d1Index ].VALUE, d1[ d1Index ].COMMENT, nodes[1] ) )
+         rc = false;
+   }
+
+   // do the second file to the first
+   if ( doReverse )
+      for ( let d2Index = 0; d2Index < d2.length; d2Index++ )
+      {
+         if ( ! compareEquation( d2[d2Index].VARIABLE, d2[ d2Index ].VALUE, d2[ d2Index ].COMMENT, nodes[0] ) )
+            rc = false;
+      }
+
+   if ( rc  == true )
+      console.log("All Passed");
+   else
+      console.log("Some FAILED");
+}
+
+function searchForUnusedGlobal( variable, nodeRecord )
+{
+   let rc = true;
+   let dataFoundAtIndex = -1;
+   let nodeData = nodeRecord.GLOBALS;
+   let nodeFile = nodeRecord.FILENAME;
+
+   // Global variables like "d1@whatever" will never be in equations, I believe
+   const equationMatch = variable.match(/([@])/);
+   if ( equationMatch !== null )
+      return true;
+
+   for ( let dataIndex = 0; dataIndex < nodeData.length; dataIndex++ )
+   {
+      const match = nodeData[ dataIndex ].VALUE.match(new RegExp('(' + variable + ')'));
+      if ( match !== null )
+      {
+         dataFoundAtIndex = dataIndex;
+         //console.log( `variable: ${variable} found at index ${ dataFoundAtIndex }`);
+         break;
+      }
+   }
+   if ( dataFoundAtIndex == -1  )
+   {
+      console.warn( `variable: ${variable} was unused in ${ nodeFile }`);
+      rc = false;
+   }
+   return rc;
+}
+
+function doGlobalVariableSearch()
+{
+   let rc = true;
+
+   if ( nodes.length != 1 )
+   {
+      console.error(`Finding unused globals needs 1 file`);
+      process.exit(1);
+   }
+
+   let d1 = nodes[ 0 ].GLOBALS;
+
+   // Search first file for unused globals
+   for ( let d1Index = 0; d1Index < d1.length; d1Index++ )
+   {
+      if ( ! searchForUnusedGlobal( d1[d1Index].VARIABLE, nodes[0] ) )
+         rc = false;
+   }
+
+   if ( rc  == true )
+      console.log("No unused globals found");
+   else
+      console.log("Some unused globals found");
+}
+
+processOpts();
+readInFile();
+
+if ( nodes.length == 1 )
+{
+  doGlobalVariableSearch();
+} else if ( nodes.length == 2 )
+{
+   compareFiles();
+} else
+{
+   console.error(`No files specified`);
+   process.exit(1);
+}
+process.exit(0);

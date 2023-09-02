@@ -1,0 +1,2 @@
+﻿"RailThickness"= 3.175mm
+"D1@Side"= "RailThicknes"
