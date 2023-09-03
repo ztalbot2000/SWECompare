@@ -24,9 +24,9 @@ So why not use diff? Well?<BR>
 
 <BR>
 ## Screenshots
-<H3 ALIGN="center">
-  <img src="https://github.com/ztalbot2000/SWECompare/raw/master/screenshots/SWECompare_screenshot1.png">
-</H3>
+<p ALIGN="center">
+  <IMG SRC="screenshots/SWECompare_screenshot1.png">
+</p>
 
 <BR>
 ## Installation
