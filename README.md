@@ -22,13 +22,13 @@ So why not use diff? Well?<BR>
 <LI> Exported files can contain different equations like "d1@Something" which needs to be ignored</LI>
 </UL>
 
-<BR>
+<BR><BR>
 ## Screenshots
 <p ALIGN="center">
   <IMG SRC="screenshots/SWECompare_screenshot1.png">
 </p>
 
-<BR>
+<BR><BR>
 ## Installation
 &nbsp;&nbsp;&nbsp; SWECompare is a Node.js tool with no other dependancies; So it works as easily on Linux as it does on Windows. The only thing you must do is install node.js.<BR>
 
@@ -38,7 +38,7 @@ So why not use diff? Well?<BR>
 <LI> Run SWECompare. i.e. node SWECompare -h
 </UL>
 
-<BR>
+<BR><BR>
 ## How to use SWECompare to compare two equation files
 &nbsp;&nbsp;&nbsp; Run SWECompare specifying both equation files.
 
@@ -52,6 +52,7 @@ For Example:
 </LI>To compare file2 with file1 also specify -r (Valid for two files only)
 </UL>
 
+<BR><BR>
 ## How to use SWECompare to compare multiple equation files with the first
 &nbsp;&nbsp;&nbsp; Run SWECompare specifying multiple equation files.
 
@@ -60,7 +61,7 @@ For Example:
 ```
    node SWECompare equationsFile1.txt equationsFile2.txt equationsFile3
 ```
-<BR>
+<BR><BR>
 ## How to use SWECompare to find unused variables
 &nbsp;&nbsp;&nbsp; Run SWECompare specifying a single equations files.
 
@@ -70,7 +71,7 @@ For Example:
    node SWECompare equationsFile.txt
 ```
 
-<BR>
+<BR><BR>
 ## How to use SWECompare to find unused variables that may be defined in other files
 &nbsp;&nbsp;&nbsp; Run SWECompare specifying a single equations files.
 
@@ -80,7 +81,7 @@ For Example:
    node SWECompare -v equationsFile.txt anotherEquationsFile.txt orEvenAnotherEquationsFile.txt
 ```
 
-<BR>
+<BR><BR>
 ## License
 See [LICENSE](LICENSE)
 
