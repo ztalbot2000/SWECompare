@@ -44,7 +44,7 @@ So why not use diff? Well?<BR>
 
 <BR>
 For Example:
-```
+```bash
    node SWECompare equationsFile1.txt equationsFile2.txt
 ```
 <UL>
@@ -58,7 +58,7 @@ For Example:
 
 <BR>
 For Example:
-```
+```bash
    node SWECompare equationsFile1.txt equationsFile2.txt equationsFile3
 ```
 
@@ -68,7 +68,7 @@ For Example:
 
 <BR>
 For Example:
-```
+```bash
    node SWECompare equationsFile.txt
 ```
 
@@ -78,7 +78,7 @@ For Example:
 
 <BR>
 For Example:
-```
+```bash
    node SWECompare -v equationsFile.txt anotherEquationsFile.txt orEvenAnotherEquationsFile.txt
 ```
 
