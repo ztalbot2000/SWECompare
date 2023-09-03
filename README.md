@@ -61,6 +61,7 @@ For Example:
 ```
    node SWECompare equationsFile1.txt equationsFile2.txt equationsFile3
 ```
+
 <BR><BR>
 ## How to use SWECompare to find unused variables
 &nbsp;&nbsp;&nbsp; Run SWECompare specifying a single equations files.
