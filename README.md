@@ -43,10 +43,12 @@ So why not use diff? Well?<BR>
 &nbsp;&nbsp;&nbsp; Run SWECompare specifying both equation files.
 
 <BR>
-For Example:
+For Example:<BR>
+
 ```bash
    node SWECompare equationsFile1.txt equationsFile2.txt
 ```
+
 <UL>
 </LI>To ignore comments that may be different, specify -ic
 </LI>To compare file2 with file1 also specify -r (Valid for two files only)
@@ -57,7 +59,8 @@ For Example:
 &nbsp;&nbsp;&nbsp; Run SWECompare specifying multiple equation files.
 
 <BR>
-For Example:
+For Example:<BR>
+
 ```bash
    node SWECompare equationsFile1.txt equationsFile2.txt equationsFile3
 ```
@@ -67,7 +70,8 @@ For Example:
 &nbsp;&nbsp;&nbsp; Run SWECompare specifying a single equations files.
 
 <BR>
-For Example:
+For Example:<BR>
+
 ```bash
    node SWECompare equationsFile.txt
 ```
@@ -77,7 +81,8 @@ For Example:
 &nbsp;&nbsp;&nbsp; Run SWECompare specifying a single equations files.
 
 <BR>
-For Example:
+For Example:<BR>
+
 ```bash
    node SWECompare -v equationsFile.txt anotherEquationsFile.txt orEvenAnotherEquationsFile.txt
 ```
