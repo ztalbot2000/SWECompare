@@ -94,20 +94,15 @@ function processOpts()
    }
 
    // backward compability
-   // console.log(`doVariables=${doVariables}`);
-   // console.log(`doDiff=${doDiff}`);
-   // console.log(`nodes.length=${nodes.length}`);
    if ( doVariables == false && doDiff == false && nodes.length == 1)
    {
       doVariables = true;
-      // console.log(`Setting doVariables=${doVariables}`);
    }
 
    // Set the default if not specified
    if ( doVariables == false && doDiff == false )
    {
       doDiff = true;
-      // console.log(`Setting doDiff=${doDiff}`);
    }
 
    // diff has certain options, check them
@@ -171,14 +166,18 @@ function readInFile()
    }
 }
 
-function compareEquation( variable, value, comment, nodeRecord )
+function compareEquation( node1GlobalsIndex, node1, node2 )
 {
+   // Get the stuff to find from node1
+   let variable1 = node1.GLOBALS[ node1GlobalsIndex ].VARIABLE;
+   let value1 = node1.GLOBALS[ node1GlobalsIndex ].VALUE;
+   let comment1 = node1.GLOBALS[ node1GlobalsIndex ].COMMENT;
    let rc = true;
 
    // Only check if variable is an equation like "d1@whatever" if asked.
    if ( includeEquations == false )
    {
-      const equationMatch = variable.match(/@/);
+      const equationMatch = variable1.match(/@/);
       if ( equationMatch !== null )
       {
          return true;
@@ -186,36 +185,42 @@ function compareEquation( variable, value, comment, nodeRecord )
    }
 
    let dataFoundAtIndex = -1;
-   let nodeData= nodeRecord.GLOBALS;
-   let nodeFile= nodeRecord.FILENAME;
-   for ( let dataIndex = 0; dataIndex < nodeData.length; dataIndex++ )
+   let node2Globals = node2.GLOBALS;
+   for ( let node2GlobalsIndex = 0; node2GlobalsIndex < node2Globals.length; node2GlobalsIndex++ )
    {
-      if ( nodeData[dataIndex].VARIABLE == variable)
+      if ( node2Globals[ node2GlobalsIndex ].VARIABLE == variable1)
       {
-         dataFoundAtIndex = dataIndex;
+         dataFoundAtIndex = node2GlobalsIndex;
          break;
       }
    }
    if ( dataFoundAtIndex == -1  )
    {
-      console.warn( `variable: ${variable} not found in ${ nodeFile }`);
+      // The line number happens to be the GLOBALS index but start from zero
+      console.warn( `Line number: ${ node1GlobalsIndex + 1 } of ${ node1.FILENAME }`);
+      console.warn( `variable: ${ variable1 } not found in ${ node2.FILENAME }`);
+      console.warn( `expected value: ${ value1 }`);
       rc = false;
    } else
    {
-      if ( nodeData[ dataFoundAtIndex ].VALUE !== value )
+      if ( node2Globals[ dataFoundAtIndex ].VALUE !== value1 )
       {
-        console.warn( `variable: ${variable} matches but not the value in ${ nodeFile }`);
-        console.warn( `${nodeData[ dataFoundAtIndex ].VALUE} != ${ value }`);
-        rc = false;
+         // The line number happens to be the GLOBALS index but start from zero
+         console.warn( `Line number: ${ node1GlobalsIndex + 1 } of ${ node1.FILENAME }`);
+         console.warn( `variable: ${ variable1 } matches but not the value at line number ${ dataFoundAtIndex + 1 } of ${ node2.FILENAME }`);
+         console.warn( `${node2Globals[ dataFoundAtIndex ].VALUE} != ${ value1 }`);
+         rc = false;
       }
 
       if ( includeComments == true )
       {
-         if ( nodeData[ dataFoundAtIndex].COMMENT !== comment )
+         if ( node2Globals[ dataFoundAtIndex].COMMENT !== comment1 )
          {
-           console.warn( `variable: ${ variable } matches but not the comment in ${ nodeFile }`);
-           console.warn( `${ nodeData[ dataFoundAtIndex ].COMMENT } != ${ comment }`);
-           rc = false;
+            // The line number happens to be the GLOBALS index but start from zero
+            console.warn( `Line number: ${ node1GlobalsIndex + 1 } of ${ node1.FILENAME }`);
+            console.warn( `variable: ${ variable1 } matches but not the comment at line number ${ dataFoundAtIndex + 1 } of ${ node2.FILENAME }`);
+            console.warn( `${ node2Globals[ dataFoundAtIndex ].COMMENT } != ${ comment1 }`);
+            rc = false;
          }
       }
    }
@@ -232,14 +237,16 @@ function compareFiles()
       process.exit(1);
    }
 
-   let d1 = nodes[ 0 ].GLOBALS;
+   let node0 = nodes[ 0 ];
+   let node0Globals = nodes[ 0 ].GLOBALS;
 
-   // do the first file to the second
-   for ( let d1Index = 0; d1Index < d1.length; d1Index++ )
+   // do the first file to
+   for ( let node0GlobalsIndex = 0; node0GlobalsIndex < node0Globals.length; node0GlobalsIndex++ )
    {
+      // the second, third ...
       for ( let fileIndex = 1; fileIndex < nodes.length; fileIndex++ )
       {
-         if ( ! compareEquation( d1[d1Index].VARIABLE, d1[ d1Index ].VALUE, d1[ d1Index ].COMMENT, nodes[fileIndex] ) )
+         if ( ! compareEquation( node0GlobalsIndex, node0, nodes[fileIndex] ) )
             rc = false;
       }
    }
@@ -247,10 +254,11 @@ function compareFiles()
    // do the second file to the first
    if ( doReverse )
    {
-      let d2 = nodes[ 1 ].GLOBALS;
-      for ( let d2Index = 0; d2Index < d2.length; d2Index++ )
+      let node1 = nodes[ 1 ];
+      let node1Globals = node1.GLOBALS;
+      for ( let node1GlobalsIndex = 0; node1GlobalsIndex < node1Globals.length; node1GlobalsIndex++ )
       {
-         if ( ! compareEquation( d2[d2Index].VARIABLE, d2[ d2Index ].VALUE, d2[ d2Index ].COMMENT, nodes[0] ) )
+         if ( ! compareEquation( node1GlobalsIndex, node1, nodes[0] ) )
             rc = false;
       }
    }
@@ -261,21 +269,21 @@ function compareFiles()
       console.log("Some FAILED");
 }
 
-function searchForUnusedGlobal( variable, nodeRecord )
+function searchForUnusedGlobal( node1GlobalsIndex, node1, node2 )
 {
-   let nodeData = nodeRecord.GLOBALS;
+   let variable1 = node1.GLOBALS[ node1GlobalsIndex ].VARIABLE;
+   let node2Globals = node2.GLOBALS;
 
    // Global variables like "d1@whatever" will never be in equations, I believe
-   const equationMatch = variable.match(/([@])/);
+   const equationMatch = variable1.match(/([@])/);
    if ( equationMatch !== null )
       return true;
 
-   for ( let dataIndex = 0; dataIndex < nodeData.length; dataIndex++ )
+   for ( let node2GlobalsIndex = 0; node2GlobalsIndex < node2Globals.length; node2GlobalsIndex++ )
    {
-      const match = nodeData[ dataIndex ].VALUE.match(new RegExp('(' + variable + ')'));
+      const match = node2Globals[ node2GlobalsIndex ].VALUE.match(new RegExp('(' + variable1 + ')'));
       if ( match !== null )
       {
-         //console.log( `variable: ${variable} found at index ${ dataFoundAtIndex }`);
          return true;
       }
    }
@@ -287,16 +295,16 @@ function doGlobalVariableSearch()
    let rc = false;
    let finalRc = true;
 
-   let d1 = nodes[ 0 ].GLOBALS;
+   let node0 = nodes[ 0 ];
+   let node0Globals = node0.GLOBALS;
 
    // Over all the variables in the first file
-   for ( let d1Index = 0; d1Index < d1.length; d1Index++ )
+   for ( let node0GlobalsIndex = 0; node0GlobalsIndex < node0Globals.length; node0GlobalsIndex++ )
    {
-      let variable = d1[d1Index].VARIABLE;
       // Search all files for the variable in the values of the record
       for ( let fileIndex = 0; fileIndex < nodes.length; fileIndex++ )
       {
-         if ( searchForUnusedGlobal( d1[d1Index].VARIABLE, nodes[fileIndex] ) == true )
+         if ( searchForUnusedGlobal( node0GlobalsIndex, node0, nodes[ fileIndex ] ) == true )
          {
             rc = true;
             // Continue if the variable was found once
@@ -308,7 +316,10 @@ function doGlobalVariableSearch()
       {
          // The overall rc is now a fail
          finalRc = false;
-         console.warn( `variable: ${variable} was unused in ${ nodes[0].FILENAME }`);
+
+         // The line number happens to be the GLOBALS index but start from zero
+         console.warn( `Line number: ${ node0GlobalsIndex + 1 } of ${ node0.FILENAME }`);
+         console.warn( `variable: ${ node0Globals[ node0GlobalsIndex ].VARIABLE } was unused`);
       }
    }
 

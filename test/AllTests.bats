@@ -16,6 +16,21 @@ run node ../SWECompare testData/equations.txt testData/equations.txt
    assert_equal "${#lines[@]}" 5
 }
 
+@test "Test Equations in two files. Second is missing a global," {
+run node ../SWECompare testData/equations.txt testData/equationsMissingGlobal.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
+   assert_equal "${lines[1]}" "Adding file: testData/equationsMissingGlobal.txt"
+   assert_equal "${lines[2]}" "Reading file: testData/equations.txt"
+   assert_equal "${lines[3]}" "Reading file: testData/equationsMissingGlobal.txt"
+   assert_equal "${lines[4]}" "Line number: 61 of testData/equations.txt"
+   assert_equal "${lines[5]}" "variable: \"DistanceFromBedSideToStepperHole\" not found in testData/equationsMissingGlobal.txt"
+   assert_equal "${lines[6]}" "expected value:  ( \"FrontBackRailLength\" - \"BedWidth\" - \"StepperMountingHoleOffsetFromLeftOrRightSide\" * 2 - \"StepperHoleDiameter\" ) / 2"
+   assert_equal "${lines[7]}" "Some FAILED"
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 8
+}
+
 @test "Test Equations in two files, Second has Missing comment but -ic not specified" {
 run node ../SWECompare testData/equations.txt testData/equationsMissingComment.txt
    assert_equal "$status" 0
@@ -35,11 +50,12 @@ run node ../SWECompare -ic testData/equations.txt testData/equationsMissingComme
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingComment.txt"
    assert_equal "${lines[2]}" "Reading file: testData/equations.txt"
    assert_equal "${lines[3]}" "Reading file: testData/equationsMissingComment.txt"
-   assert_equal "${lines[4]}" "variable: \"RailThickness\" matches but not the comment in testData/equationsMissingComment.txt"
-   assert_equal "${lines[5]}" "'This comment not in original file != "
-   assert_equal "${lines[6]}" "Some FAILED"
+   assert_equal "${lines[4]}" "Line number: 1 of testData/equations.txt"
+   assert_equal "${lines[5]}" "variable: \"RailThickness\" matches but not the comment at line number 1 of testData/equationsMissingComment.txt"
+   assert_equal "${lines[6]}" "'This comment not in original file != "
+   assert_equal "${lines[7]}" "Some FAILED"
    # No more lines than expected
-   assert_equal "${#lines[@]}" 7
+   assert_equal "${#lines[@]}" 8
 }
 
 @test "Test Equations in two files, Second has different Global vaiable value" {
@@ -49,11 +65,12 @@ run node ../SWECompare testData/equations.txt testData/equationsWithDifferentGlo
    assert_equal "${lines[1]}" "Adding file: testData/equationsWithDifferentGlobal.txt"
    assert_equal "${lines[2]}" "Reading file: testData/equations.txt"
    assert_equal "${lines[3]}" "Reading file: testData/equationsWithDifferentGlobal.txt"
-   assert_equal "${lines[4]}" "variable: \"StandardWallThickness\" matches but not the value in testData/equationsWithDifferentGlobal.txt"
-   assert_equal "${lines[5]}" " 5mm !=  3mm"
-   assert_equal "${lines[6]}" "Some FAILED"
+   assert_equal "${lines[4]}" "Line number: 51 of testData/equations.txt"
+   assert_equal "${lines[5]}" "variable: \"StandardWallThickness\" matches but not the value at line number 51 of testData/equationsWithDifferentGlobal.txt"
+   assert_equal "${lines[6]}" " 5mm !=  3mm"
+   assert_equal "${lines[7]}" "Some FAILED"
    # No more lines than expected
-   assert_equal "${#lines[@]}" 7
+   assert_equal "${#lines[@]}" 8
 }
 
 @test "Test Equations in two files with -r, Second has different Global vaiable value" {
@@ -63,13 +80,15 @@ run node ../SWECompare -r testData/equations.txt testData/equationsWithDifferent
    assert_equal "${lines[1]}" "Adding file: testData/equationsWithDifferentGlobal.txt"
    assert_equal "${lines[2]}" "Reading file: testData/equations.txt"
    assert_equal "${lines[3]}" "Reading file: testData/equationsWithDifferentGlobal.txt"
-   assert_equal "${lines[4]}" "variable: \"StandardWallThickness\" matches but not the value in testData/equationsWithDifferentGlobal.txt"
-   assert_equal "${lines[5]}" " 5mm !=  3mm"
-   assert_equal "${lines[6]}" "variable: \"StandardWallThickness\" matches but not the value in testData/equations.txt"
-   assert_equal "${lines[7]}" " 3mm !=  5mm"
-   assert_equal "${lines[8]}" "Some FAILED"
+   assert_equal "${lines[4]}" "Line number: 51 of testData/equations.txt"
+   assert_equal "${lines[5]}" "variable: \"StandardWallThickness\" matches but not the value at line number 51 of testData/equationsWithDifferentGlobal.txt"
+   assert_equal "${lines[6]}" " 5mm !=  3mm"
+   assert_equal "${lines[7]}" "Line number: 51 of testData/equationsWithDifferentGlobal.txt"
+   assert_equal "${lines[8]}" "variable: \"StandardWallThickness\" matches but not the value at line number 51 of testData/equations.txt"
+   assert_equal "${lines[9]}" " 3mm !=  5mm"
+   assert_equal "${lines[10]}" "Some FAILED"
    # No more lines than expected
-   assert_equal "${#lines[@]}" 9
+   assert_equal "${#lines[@]}" 11
 }
 
 @test "Test Equations in two files, Second has missing \"D1@Something\"" {
@@ -89,10 +108,11 @@ run node ../SWECompare testData/missingGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/missingGlobal.txt"
    assert_equal "${lines[1]}" "Reading file: testData/missingGlobal.txt"
-   assert_equal "${lines[2]}" "variable: \"RailThickness\" was unused in testData/missingGlobal.txt"
-   assert_equal "${lines[3]}" "Some unused globals found"
+   assert_equal "${lines[2]}" "Line number: 1 of testData/missingGlobal.txt"
+   assert_equal "${lines[3]}" "variable: \"RailThickness\" was unused"
+   assert_equal "${lines[4]}" "Some unused globals found"
    # No more lines than expected
-   assert_equal "${#lines[@]}" 4
+   assert_equal "${#lines[@]}" 5
 }
 
 @test "Test a Missing Global in a file but found in another" {
