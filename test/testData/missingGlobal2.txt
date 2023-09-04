@@ -1,0 +1,3 @@
+﻿"RailThickness"= 3.175mm
+"StepperHoleDiameter"= 24mm'Spec
+"D2@CornerrSketch1"="StepperHoleDiameter" +10mm

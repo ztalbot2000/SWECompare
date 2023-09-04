@@ -301,6 +301,9 @@ function doGlobalVariableSearch()
    // Over all the variables in the first file
    for ( let node0GlobalsIndex = 0; node0GlobalsIndex < node0Globals.length; node0GlobalsIndex++ )
    {
+      // Reset the return code before each search
+      rc = false;
+
       // Search all files for the variable in the values of the record
       for ( let fileIndex = 0; fileIndex < nodes.length; fileIndex++ )
       {

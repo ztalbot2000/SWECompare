@@ -104,6 +104,18 @@ run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.
 }
 
 @test "Test a Missing Global in a file" {
+run node ../SWECompare testData/missingGlobal2.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/missingGlobal2.txt"
+   assert_equal "${lines[1]}" "Reading file: testData/missingGlobal2.txt"
+   assert_equal "${lines[2]}" "Line number: 1 of testData/missingGlobal2.txt"
+   assert_equal "${lines[3]}" "variable: \"RailThickness\" was unused"
+   assert_equal "${lines[4]}" "Some unused globals found"
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 5
+}
+
+@test "Test a Missing Global in a file Global in \"d1@Something\" spelled incorrectly" {
 run node ../SWECompare testData/missingGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/missingGlobal.txt"
