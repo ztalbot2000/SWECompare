@@ -1,0 +1,1 @@
+"DistanceFromBedSideToStepperHole"= ( "FrontBackRailLength" - "BedWidth" - "StepperMountingHoleOffsetFromLeftOrRightSide" * 222 - "StepperHoleDiameter" ) / 2

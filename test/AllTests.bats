@@ -103,6 +103,39 @@ run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.
    assert_equal "${#lines[@]}" 5
 }
 
+@test "Test Equations in three files, Third finds variable " {
+run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.txt testData/equationsFoundGlobal.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
+   assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
+   assert_equal "${lines[2]}" "Adding file: testData/equationsFoundGlobal.txt"
+   assert_equal "${lines[3]}" "Reading file: testData/equations.txt"
+   assert_equal "${lines[4]}" "Reading file: testData/equationsMissingEquation.txt"
+   assert_equal "${lines[5]}" "Reading file: testData/equationsFoundGlobal.txt"
+   assert_equal "${lines[6]}" "All Passed"
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 7
+}
+
+@test "Test Equations in four files, Fourth finds incorrect variable " {
+run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.txt testData/equationsFoundGlobal.txt testData/equationsFoundIncorrectGlobal.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
+   assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
+   assert_equal "${lines[2]}" "Adding file: testData/equationsFoundGlobal.txt"
+   assert_equal "${lines[3]}" "Adding file: testData/equationsFoundIncorrectGlobal.txt"
+   assert_equal "${lines[4]}" "Reading file: testData/equations.txt"
+   assert_equal "${lines[5]}" "Reading file: testData/equationsMissingEquation.txt"
+   assert_equal "${lines[6]}" "Reading file: testData/equationsFoundGlobal.txt"
+   assert_equal "${lines[7]}" "Reading file: testData/equationsFoundIncorrectGlobal.txt"
+   assert_equal "${lines[8]}" "Line number: 61 of testData/equations.txt"
+   assert_equal "${lines[9]}" "variable: \"DistanceFromBedSideToStepperHole\" matches but not the value at line number 1 of testData/equationsFoundIncorrectGlobal.txt"
+   assert_equal "${lines[10]}" " ( \"FrontBackRailLength\" - \"BedWidth\" - \"StepperMountingHoleOffsetFromLeftOrRightSide\" * 222 - \"StepperHoleDiameter\" ) / 2 !=  ( \"FrontBackRailLength\" - \"BedWidth\" - \"StepperMountingHoleOffsetFromLeftOrRightSide\" * 2 - \"StepperHoleDiameter\" ) / 2"
+   assert_equal "${lines[11]}" "Some FAILED"
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 12
+}
+
 @test "Test a Missing Global in a file" {
 run node ../SWECompare testData/missingGlobal2.txt
    assert_equal "$status" 0
