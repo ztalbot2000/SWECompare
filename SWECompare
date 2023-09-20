@@ -132,6 +132,35 @@ function processOpts()
    }
 }
 
+// Return the position of the string if different
+// Otherwise return -1 (Same)
+function findFirstDiffPos(a, b)
+{
+  var i = 0;
+  if (a === b) return -1;
+  while (a[i] === b[i]) i++;
+  return i;
+}
+
+function indicateStringDifference( str1, str2 )
+{
+   let i = 0;
+   let spacer = "";
+
+   if (str1 !== str2)
+      while (str1[i] === str2[i])
+      {
+        spacer += " ";
+        i++;
+      }
+
+   console.warn( `< ${ str1 }` );
+   console.warn( `  ${ spacer }^`);
+   console.warn( `> ${ str2 }` );
+   console.warn( `  ${ spacer }^`);
+
+}
+
 function readInFile()
 {
    for ( let fileIndex = 0; (fileIndex < nodes.length ); fileIndex++ )
@@ -204,24 +233,24 @@ function compareEquation( node1GlobalsIndex, node1, node2 )
    // We found the variable, no matter if its right or wrong
    foundCount++;
 
-   if ( node2.GLOBALS[ dataFoundAtIndex ].VALUE !== value1 )
+   if ( findFirstDiffPos( node2.GLOBALS[ dataFoundAtIndex ].VALUE, value1 ) != -1 )
    {
       // The line number happens to be the GLOBALS index but start from zero
       console.warn( `Line number: ${ node1GlobalsIndex + 1 } of ${ node1.FILENAME }`);
       console.warn( `variable: ${ variable1 } matches but not the value at line number ${ dataFoundAtIndex + 1 } of ${ node2.FILENAME }`);
-      console.warn( `${node2.GLOBALS[ dataFoundAtIndex ].VALUE} != ${ value1 }`);
+      indicateStringDifference( value1, node2.GLOBALS[ dataFoundAtIndex ].VALUE );
 
       errorCount++;
    }
 
    if ( includeComments == true )
    {
-      if ( node2.GLOBALS[ dataFoundAtIndex].COMMENT !== comment1 )
+      if ( findFirstDiffPos( node2.GLOBALS[ dataFoundAtIndex].COMMENT, comment1 ) != -1 )
       {
          // The line number happens to be the GLOBALS index but start from zero
          console.warn( `Line number: ${ node1GlobalsIndex + 1 } of ${ node1.FILENAME }`);
          console.warn( `variable: ${ variable1 } matches but not the comment at line number ${ dataFoundAtIndex + 1 } of ${ node2.FILENAME }`);
-         console.warn( `${ node2.GLOBALS[ dataFoundAtIndex ].COMMENT } != ${ comment1 }`);
+         indicateStringDifference( comment1, node2.GLOBALS[ dataFoundAtIndex ].COMMENT );
 
          errorCount++;
       }

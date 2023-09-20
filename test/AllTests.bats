@@ -52,10 +52,13 @@ run node ../SWECompare -ic testData/equations.txt testData/equationsMissingComme
    assert_equal "${lines[3]}" "Reading file: testData/equationsMissingComment.txt"
    assert_equal "${lines[4]}" "Line number: 1 of testData/equations.txt"
    assert_equal "${lines[5]}" "variable: \"RailThickness\" matches but not the comment at line number 1 of testData/equationsMissingComment.txt"
-   assert_equal "${lines[6]}" "'This comment not in original file != "
-   assert_equal "${lines[7]}" "Differences detected: 1"
+   assert_equal "${lines[6]}" "< "
+   assert_equal "${lines[7]}" "  ^"
+   assert_equal "${lines[8]}" "> 'This comment is in second file"
+   assert_equal "${lines[9]}" "  ^"
+   assert_equal "${lines[10]}" "Differences detected: 1"
    # No more lines than expected
-   assert_equal "${#lines[@]}" 8
+   assert_equal "${#lines[@]}" 11
 }
 
 @test "Test Equations in two files, Second has different Global vaiable value" {
@@ -67,10 +70,13 @@ run node ../SWECompare testData/equations.txt testData/equationsWithDifferentGlo
    assert_equal "${lines[3]}" "Reading file: testData/equationsWithDifferentGlobal.txt"
    assert_equal "${lines[4]}" "Line number: 51 of testData/equations.txt"
    assert_equal "${lines[5]}" "variable: \"StandardWallThickness\" matches but not the value at line number 51 of testData/equationsWithDifferentGlobal.txt"
-   assert_equal "${lines[6]}" " 5mm !=  3mm"
-   assert_equal "${lines[7]}" "Differences detected: 1"
+   assert_equal "${lines[6]}" "<  3mm"
+   assert_equal "${lines[7]}" "   ^"
+   assert_equal "${lines[8]}" ">  5mm"
+   assert_equal "${lines[9]}" "   ^"
+   assert_equal "${lines[10]}" "Differences detected: 1"
    # No more lines than expected
-   assert_equal "${#lines[@]}" 8
+   assert_equal "${#lines[@]}" 11
 }
 
 @test "Test Equations in two files with -r, Second has different Global vaiable value" {
@@ -82,13 +88,19 @@ run node ../SWECompare -r testData/equations.txt testData/equationsWithDifferent
    assert_equal "${lines[3]}" "Reading file: testData/equationsWithDifferentGlobal.txt"
    assert_equal "${lines[4]}" "Line number: 51 of testData/equations.txt"
    assert_equal "${lines[5]}" "variable: \"StandardWallThickness\" matches but not the value at line number 51 of testData/equationsWithDifferentGlobal.txt"
-   assert_equal "${lines[6]}" " 5mm !=  3mm"
-   assert_equal "${lines[7]}" "Line number: 51 of testData/equationsWithDifferentGlobal.txt"
-   assert_equal "${lines[8]}" "variable: \"StandardWallThickness\" matches but not the value at line number 51 of testData/equations.txt"
-   assert_equal "${lines[9]}" " 3mm !=  5mm"
-   assert_equal "${lines[10]}" "Differences detected: 2"
+   assert_equal "${lines[6]}" "<  3mm"
+   assert_equal "${lines[7]}" "   ^"
+   assert_equal "${lines[8]}" ">  5mm"
+   assert_equal "${lines[9]}" "   ^"
+   assert_equal "${lines[10]}" "Line number: 51 of testData/equationsWithDifferentGlobal.txt"
+   assert_equal "${lines[11]}" "variable: \"StandardWallThickness\" matches but not the value at line number 51 of testData/equations.txt"
+   assert_equal "${lines[12]}" "<  5mm"
+   assert_equal "${lines[13]}" "   ^"
+   assert_equal "${lines[14]}" ">  3mm"
+   assert_equal "${lines[15]}" "   ^"
+   assert_equal "${lines[16]}" "Differences detected: 2"
    # No more lines than expected
-   assert_equal "${#lines[@]}" 11
+   assert_equal "${#lines[@]}" 17
 }
 
 @test "Test Equations in two files, Second has missing \"D1@Something\"" {
@@ -130,10 +142,13 @@ run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.
    assert_equal "${lines[7]}" "Reading file: testData/equationsFoundIncorrectGlobal.txt"
    assert_equal "${lines[8]}" "Line number: 61 of testData/equations.txt"
    assert_equal "${lines[9]}" "variable: \"DistanceFromBedSideToStepperHole\" matches but not the value at line number 1 of testData/equationsFoundIncorrectGlobal.txt"
-   assert_equal "${lines[10]}" " ( \"FrontBackRailLength\" - \"BedWidth\" - \"StepperMountingHoleOffsetFromLeftOrRightSide\" * 222 - \"StepperHoleDiameter\" ) / 2 !=  ( \"FrontBackRailLength\" - \"BedWidth\" - \"StepperMountingHoleOffsetFromLeftOrRightSide\" * 2 - \"StepperHoleDiameter\" ) / 2"
-   assert_equal "${lines[11]}" "Differences detected: 1"
+   assert_equal "${lines[10]}" "<  ( \"FrontBackRailLength\" - \"BedWidth\" - \"StepperMountingHoleOffsetFromLeftOrRightSide\" * 2 - \"StepperHoleDiameter\" ) / 2"
+   assert_equal "${lines[11]}" "                                                                                            ^"
+   assert_equal "${lines[12]}" ">  ( \"FrontBackRailLength\" - \"BedWidth\" - \"StepperMountingHoleOffsetFromLeftOrRightSide\" * 222 - \"StepperHoleDiameter\" ) / 2"
+   assert_equal "${lines[13]}" "                                                                                            ^"
+   assert_equal "${lines[14]}" "Differences detected: 1"
    # No more lines than expected
-   assert_equal "${#lines[@]}" 12
+   assert_equal "${#lines[@]}" 15
 }
 
 @test "Test a Missing Global in a file" {

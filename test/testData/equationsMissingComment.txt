@@ -1,4 +1,4 @@
-﻿"RailThickness"= 3.175mm'This comment not in original file
+﻿"RailThickness"= 3.175mm'This comment is in second file
 "StepperHoleDiameter"= 24mm'Spec
 "StepperMountingHoleDiameter"= 3.175mm
 "SideRailLength"= 550mm
