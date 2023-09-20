@@ -254,6 +254,9 @@ function compareFiles()
 
       if ( foundCount == 0 )
       {
+         // Not found in all files counts as an error
+         errorCount++;
+
          // The line number happens to be the GLOBALS index but start from zero
          console.warn( `Line number: ${ node0GlobalsIndex + 1 } of ${ node0.FILENAME }`);
          if ( nodes.length == 2 )
@@ -276,7 +279,6 @@ function compareFiles()
 
       // reset counters
       foundCount  = 0;
-      errorCount  = 0;
 
       // Over all the globals in the second file to the first
       for ( let node1GlobalsIndex = 0; node1GlobalsIndex < node1Globals.length; node1GlobalsIndex++ )
@@ -285,14 +287,17 @@ function compareFiles()
 
          if ( foundCount == 0 )
          {
-               // The line number happens to be the GLOBALS index but start from zero
-               console.warn( `Line number: ${ node1GlobalsIndex + 1 } of ${ node0.FILENAME }`);
-               console.warn( `variable: ${ node1.GLOBALS[ node1GlobalsIndex ].VARIABLE } not found in ${ node0.FILENAME }`);
+            // Not found in the file counts as an error
+            errorCount++;
 
-               console.warn( `expected value: ${ node1.GLOBALS[ node1GlobalsIndex ].VALUE }`);
+            // The line number happens to be the GLOBALS index but start from zero
+            console.warn( `Line number: ${ node1GlobalsIndex + 1 } of ${ node0.FILENAME }`);
+            console.warn( `variable: ${ node1.GLOBALS[ node1GlobalsIndex ].VARIABLE } not found in ${ node0.FILENAME }`);
 
-               // In the case of just two files because of -r, this is a failure.
-               rc = false;
+            console.warn( `expected value: ${ node1.GLOBALS[ node1GlobalsIndex ].VALUE }`);
+
+            // In the case of just two files because of -r, this is a failure.
+            rc = false;
          }
 
          if ( errorCount > 0 )
@@ -303,7 +308,7 @@ function compareFiles()
    if ( rc == true )
       console.log("All Passed");
    else
-      console.log("Some FAILED");
+      console.log(`Differences detected: ${ errorCount }`);
 }
 
 function searchForUnusedGlobal( node1GlobalsIndex, node1, node2 )
@@ -330,10 +335,11 @@ function searchForUnusedGlobal( node1GlobalsIndex, node1, node2 )
 function doGlobalVariableSearch()
 {
    let rc = false;
-   let finalRc = true;
 
    let node0 = nodes[ 0 ];
    let node0Globals = node0.GLOBALS;
+
+   errorCount = 0;
 
    // Over all the variables in the first file
    for ( let node0GlobalsIndex = 0; node0GlobalsIndex < node0Globals.length; node0GlobalsIndex++ )
@@ -347,6 +353,7 @@ function doGlobalVariableSearch()
          if ( searchForUnusedGlobal( node0GlobalsIndex, node0, nodes[ fileIndex ] ) == true )
          {
             rc = true;
+
             // Continue if the variable was found once
             fileIndex = nodes.length;
          }
@@ -354,8 +361,7 @@ function doGlobalVariableSearch()
       // log the failure
       if ( rc == false )
       {
-         // The overall rc is now a fail
-         finalRc = false;
+         errorCount++;
 
          // The line number happens to be the GLOBALS index but start from zero
          console.warn( `Line number: ${ node0GlobalsIndex + 1 } of ${ node0.FILENAME }`);
@@ -363,8 +369,8 @@ function doGlobalVariableSearch()
       }
    }
 
-   if ( finalRc == false )
-      console.log("Some unused globals found");
+   if ( errorCount != 0 )
+      console.log(`Unused globals found: ${ errorCount }`);
    else
       console.log("No unused globals found");
 }
