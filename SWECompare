@@ -19,11 +19,13 @@ var includeEquations = false; // default
 var doReverse = false;        // default
 var doVariables = false;
 var doDiff = false;
+var doLinkedValues = false;
 var doDebug = false;
 
 var foundCount = 0;
 var errorCount = 0;
 const FILECOMMENT = "FILECOMMENT";
+const LINKEDVALUE = "LINKEDVALUE";
 
 // A great regex debugger site:
 // https://regex101.com/r/bE3c0x/5
@@ -53,6 +55,9 @@ function processOpts()
           doVariables = true;
           doDiff = false;
           break;
+        case '-lv':
+          doLinkedValues = true;
+          break;
         case '-d':
           if ( doVariables == true )
           {
@@ -66,6 +71,7 @@ function processOpts()
           doDebug = true;
           break;
         case '-h':
+        case '-help':
           console.log(`Description:`);
           console.log(`  Check SolidWorks global equation files for differences OR`);
           console.log(`  find unused variables in an equation file.`);
@@ -73,13 +79,16 @@ function processOpts()
           console.log(`Usage:`);
           console.log(`${process.argv[0]} [-d] [-v] [-ie] [-ic] [-nr] file1 file2 file3 ...`);
           console.log(`   Where:`);
-          console.log(`     -d  -find variables from file1 not in other files with different values (default)`);
+          console.log(`     -d  -find variables from file1 not in other files with different values (default).`);
           console.log(`        Options that affect -d only`);
           console.log(`           -ie -Include equations (Variables like "d1@Something"`);
-          console.log(`           -ic -Include comments in differences`);
+          console.log(`           -ic -Include comments in differences.`);
           console.log(`           -r  -Check file1 vs file2 and file2 vs file1`);
           console.log(`                Valid for when only two files are specified`);
           console.log(`     -v  -find missing variables from file1 not in other files`);
+          console.log(`     -lv -find missing linked variables.`);
+          console.log(`          Tries to solve stuff like "var1= var2" and var2 is not`);
+          console.log(`          defined in the same file.`);
           console.log(``);
           console.log(`Example1: Find global variable differences between files`);
           console.log(`${process.argv[0]} file1 file2`);
@@ -229,6 +238,23 @@ function readInFile()
             nodes[ fileIndex ].GLOBALS.push(
                { VARIABLE: v1, VALUE: v2, COMMENT: v3 }
             );
+
+            // This is experimental.  Trying to find stuff like:
+            // someVariable = someOtherVariable
+            const equationMatch = v1.match(/([@])/);
+            if ( doLinkedValues == true &&
+                 equationMatch == null &&
+                !v2.endsWith("mm") && !v2.endsWith("in") &&
+                 v2.split(" ").length == 2 )
+            {
+               if ( doDebug == true )
+                  console.debug( `pushing linked value nodes[${fileIndex}] VARIABLE: ${ v2 }, VALUE: ${ LINKEDVALUE }, COMMENT: " "`);
+               nodes[ fileIndex ].GLOBALS.push(
+                  { VARIABLE: v2, VALUE: LINKEDVALUE, COMMENT: " " }
+               );
+
+            }
+
          }
       });
    }
@@ -285,7 +311,8 @@ function compareEquation( node1GlobalsIndex, node1, node2 )
    if ( findFirstDiffPos( node2.GLOBALS[ dataFoundAtIndex ].VALUE, value1 ) != -1 )
    {
       // The line number happens to be the GLOBALS index but start from zero
-      console.warn( `Line number: ${ node1GlobalsIndex + 1 } of ${ node1.FILENAME }`);
+      // With -lv this is not true as we push linked variables
+      console.warn( `Around line number: ${ node1GlobalsIndex + 1 } of ${ node1.FILENAME }`);
       console.warn( `variable: ${ variable1 } matches but not the value at line number ${ dataFoundAtIndex + 1 } of ${ node2.FILENAME }`);
       indicateStringDifference( value1, node2.GLOBALS[ dataFoundAtIndex ].VALUE );
 
@@ -297,7 +324,8 @@ function compareEquation( node1GlobalsIndex, node1, node2 )
       if ( findFirstDiffPos( node2.GLOBALS[ dataFoundAtIndex].COMMENT, comment1 ) != -1 )
       {
          // The line number happens to be the GLOBALS index but start from zero
-         console.warn( `Line number: ${ node1GlobalsIndex + 1 } of ${ node1.FILENAME }`);
+         // With -lv this is not true as we push linked variables
+         console.warn( `Around line number: ${ node1GlobalsIndex + 1 } of ${ node1.FILENAME }`);
          console.warn( `variable: ${ variable1 } matches but not the comment at line number ${ dataFoundAtIndex + 1 } of ${ node2.FILENAME }`);
          indicateStringDifference( comment1, node2.GLOBALS[ dataFoundAtIndex ].COMMENT );
 
@@ -336,7 +364,8 @@ function compareFiles()
          errorCount++;
 
          // The line number happens to be the GLOBALS index but start from zero
-         console.warn( `Line number: ${ node0GlobalsIndex + 1 } of ${ node0.FILENAME }`);
+         // With -lv this is not true as we push linked variables
+         console.warn( `Around line number: ${ node0GlobalsIndex + 1 } of ${ node0.FILENAME }`);
          if ( nodes.length == 2 )
             console.warn( `variable: ${ node0.GLOBALS[ node0GlobalsIndex ].VARIABLE } not found in ${ nodes[ 1 ].FILENAME }`);
          else
@@ -369,7 +398,8 @@ function compareFiles()
             errorCount++;
 
             // The line number happens to be the GLOBALS index but start from zero
-            console.warn( `Line number: ${ node1GlobalsIndex + 1 } of ${ node0.FILENAME }`);
+            // With -lv this is not true as we push linked variables
+            console.warn( `Around line number: ${ node1GlobalsIndex + 1 } of ${ node0.FILENAME }`);
             console.warn( `variable: ${ node1.GLOBALS[ node1GlobalsIndex ].VARIABLE } not found in ${ node0.FILENAME }`);
 
             console.warn( `expected value: ${ node1.GLOBALS[ node1GlobalsIndex ].VALUE }`);
@@ -392,6 +422,7 @@ function compareFiles()
 function searchForUnusedGlobal( node1GlobalsIndex, node1, node2, node2FileIndex )
 {
    let variable1 = node1.GLOBALS[ node1GlobalsIndex ].VARIABLE;
+   var value1 = node1.GLOBALS[ node1GlobalsIndex ].VALUE;
    let node2Globals = node2.GLOBALS;
 
    if ( variable1 === FILECOMMENT )
@@ -402,23 +433,41 @@ function searchForUnusedGlobal( node1GlobalsIndex, node1, node2, node2FileIndex 
    }
 
    // Global variables like "d1@whatever" will never be in equations, I believe
-   const equationMatch = variable1.match(/([@])/);
-   if ( equationMatch !== null )
+   const equationMatch1 = variable1.match(/([@])/);
+   if ( equationMatch1 !== null )
       return true;
 
    for ( let node2GlobalsIndex = 0; node2GlobalsIndex < node2Globals.length; node2GlobalsIndex++ )
    {
-      let global = node2Globals[ node2GlobalsIndex ].VARIABLE;
-      if ( global == FILECOMMENT )
+      let variable2 = node2Globals[ node2GlobalsIndex ].VARIABLE;
+      var value2 = node2Globals[ node2GlobalsIndex ].VALUE;
+      if ( variable2 == FILECOMMENT )
       {
          if ( doDebug == true )
             console.debug(`searchForUnusedGlobal: Ignoring FILECOMMENT in ${ nodes[node2FileIndex].FILENAME } line: ${node2GlobalsIndex } COMMENT: ${node2Globals[ node2GlobalsIndex ].COMMENT}`);
       } else
       {
-         const match = node2Globals[ node2GlobalsIndex ].VALUE.match(new RegExp('(' + variable1 + ')'));
-         if ( match !== null )
+         if ( value1 == LINKEDVALUE )
          {
-            return true;
+            const equationMatch2 = variable2.match(/([@])/);
+            if ( equationMatch2 === null )
+            {
+               const match = variable2.match(new RegExp('(' + variable1 + ')'));
+               if ( match === null )
+               {
+                  if ( variable1 != value2 )
+                  {
+                     return true;
+                  }
+               }
+            }
+         } else
+         {
+            const match = value2.match(new RegExp('(' + variable1 + ')'));
+            if ( match !== null )
+            {
+               return true;
+            }
          }
       }
    }
@@ -457,8 +506,14 @@ function doGlobalVariableSearch()
          errorCount++;
 
          // The line number happens to be the GLOBALS index but start from zero
-         console.warn( `Line number: ${ node0GlobalsIndex + 1 } of ${ node0.FILENAME }`);
-         console.warn( `variable: ${ node0Globals[ node0GlobalsIndex ].VARIABLE } was unused`);
+         // With -lv this is not true as we push linked variables
+         console.warn( `Around line number: ${ node0GlobalsIndex + 1 } of ${ node0.FILENAME }`);
+         if ( node0Globals[ node0GlobalsIndex ].VALUE == LINKEDVALUE )
+         {
+           console.warn( `Linked variable: ${ node0Globals[ node0GlobalsIndex ].VARIABLE } was undefined`);
+         } else {
+           console.warn( `variable: ${ node0Globals[ node0GlobalsIndex ].VARIABLE } was unused`);
+         }
       }
    }
 

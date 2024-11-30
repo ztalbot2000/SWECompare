@@ -1,0 +1,3 @@
+﻿"V1 BottomOfLowerRail"= "LegHeight"
+"D1@LeftSideHoles-Sketch3"="V1 BottomOfLowerRail"
+"LegHeight"= 15mm
