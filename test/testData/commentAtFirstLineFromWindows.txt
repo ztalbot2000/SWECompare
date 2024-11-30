@@ -1,0 +1,6 @@
+﻿# From VerticalSupportYardStickEquations.txt
+"V1 BottomOfLowerRail"= "LegHeight"
+# From BackLeftVerticalSupportEquations.txt
+"RailThickness"= .125in'Spec
+"D1@LeftSideHoles-Sketch3"="V1 BottomOfLowerRail"
+"D2@Rails"="RailThickness"

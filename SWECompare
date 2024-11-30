@@ -19,9 +19,11 @@ var includeEquations = false; // default
 var doReverse = false;        // default
 var doVariables = false;
 var doDiff = false;
+var doDebug = false;
 
 var foundCount = 0;
 var errorCount = 0;
+const FILECOMMENT = "FILECOMMENT";
 
 // A great regex debugger site:
 // https://regex101.com/r/bE3c0x/5
@@ -59,6 +61,9 @@ function processOpts()
           }
           doDiff = true;
           doVariables = false;
+          break;
+        case '-debug':
+          doDebug = true;
           break;
         case '-h':
           console.log(`Description:`);
@@ -181,19 +186,50 @@ function readInFile()
 
       lines.forEach( function( line, lineIndex)
       {
-         if (line === "")
+         if ( line === "" )
             return;
 
-         const regexp = /^.*?("[^"]*").*?=.*?([^']*)(.*)/;
-         const arrayMatch = line.match(regexp);
-         if ( !arrayMatch || !arrayMatch.length )
+         // Okay this is weird. Windows puts a funny character at the very
+         // first line if it starts with A "#". This is supposedly fixed
+         // by reading in the file as utf8-16le, but this did not work for me.
+         // So the following Kludge works.
+         if ( lineIndex == 0 && line.charCodeAt(0) == 65279 )
          {
-            console.warn( `Line ${ lineIndex } not a valid value ${ line }` );
-            process.exit(1);
+            if ( doDebug == true )
+               console.debug( `shifting nodes[${fileIndex}] a file comment line` );
+
+            line = line.substr(1);
          }
-         nodes[ fileIndex ].GLOBALS.push(
-            { VARIABLE: arrayMatch[1], VALUE: arrayMatch[2].replace(/[\n\r]+$/, ""), COMMENT: arrayMatch[3].replace(/\n+$/, "")}
-         );
+
+         if ( line.startsWith( "#" ) )
+         {
+            if ( doDebug == true )
+               console.debug( `pushing nodes[${fileIndex}] a file comment line` );
+
+            // Ignore comment lines. These are not added by SolidWorks, but are
+            // ice to add in your own equation files.
+            nodes[ fileIndex ].GLOBALS.push(
+               { VARIABLE: FILECOMMENT, VALUE: lineIndex , COMMENT: line});
+         } else
+         {
+            const regexp = /^.*?("[^"]*").*?=.*?([^']*)(.*)/;
+            const arrayMatch = line.match(regexp);
+            if ( !arrayMatch || !arrayMatch.length )
+            {
+               console.warn( `Line ${ lineIndex } not a valid value "${ line }"` );
+               process.exit(1);
+            }
+            let v1 = arrayMatch[1];
+            let v2 = arrayMatch[2].replace(/[\n\r]+$/, "");
+            let v3 = arrayMatch[3].replace(/\n+$/, "");
+
+            if ( doDebug == true )
+               console.debug( `pushing nodes[${fileIndex}] VARIABLE: ${ v1 }, VALUE: ${ v2 }, COMMENT: ${ v3 }`);
+
+            nodes[ fileIndex ].GLOBALS.push(
+               { VARIABLE: v1, VALUE: v2, COMMENT: v3 }
+            );
+         }
       });
    }
 }
@@ -204,6 +240,16 @@ function compareEquation( node1GlobalsIndex, node1, node2 )
    let variable1 = node1.GLOBALS[ node1GlobalsIndex ].VARIABLE;
    let value1 = node1.GLOBALS[ node1GlobalsIndex ].VALUE;
    let comment1 = node1.GLOBALS[ node1GlobalsIndex ].COMMENT;
+
+   if ( variable1 == FILECOMMENT )
+   {
+      if ( doDebug == true )
+         console.debug(`compareEquation: Ignoring ${ variable1 }`);
+
+      // We say this is found
+      foundCount++;
+      return;
+   }
 
    // Only check if variable is an equation like "d1@whatever" if asked.
    if ( includeEquations == false )
@@ -225,6 +271,9 @@ function compareEquation( node1GlobalsIndex, node1, node2 )
          break;
       }
    }
+   if ( doDebug == true )
+      console.debug(`compareEquation: ${ variable1 } found at ${dataFoundAtIndex}`);
+
    if ( dataFoundAtIndex == -1 )
    {
       return;
@@ -340,10 +389,17 @@ function compareFiles()
       console.log(`Differences detected: ${ errorCount }`);
 }
 
-function searchForUnusedGlobal( node1GlobalsIndex, node1, node2 )
+function searchForUnusedGlobal( node1GlobalsIndex, node1, node2, node2FileIndex )
 {
    let variable1 = node1.GLOBALS[ node1GlobalsIndex ].VARIABLE;
    let node2Globals = node2.GLOBALS;
+
+   if ( variable1 === FILECOMMENT )
+   {
+      if ( doDebug == true )
+         console.debug(`searchForUnusedGlobal: Ignoring ${ variable1 }`);
+      return true;
+   }
 
    // Global variables like "d1@whatever" will never be in equations, I believe
    const equationMatch = variable1.match(/([@])/);
@@ -352,10 +408,18 @@ function searchForUnusedGlobal( node1GlobalsIndex, node1, node2 )
 
    for ( let node2GlobalsIndex = 0; node2GlobalsIndex < node2Globals.length; node2GlobalsIndex++ )
    {
-      const match = node2Globals[ node2GlobalsIndex ].VALUE.match(new RegExp('(' + variable1 + ')'));
-      if ( match !== null )
+      let global = node2Globals[ node2GlobalsIndex ].VARIABLE;
+      if ( global == FILECOMMENT )
       {
-         return true;
+         if ( doDebug == true )
+            console.debug(`searchForUnusedGlobal: Ignoring FILECOMMENT in ${ nodes[node2FileIndex].FILENAME } line: ${node2GlobalsIndex } COMMENT: ${node2Globals[ node2GlobalsIndex ].COMMENT}`);
+      } else
+      {
+         const match = node2Globals[ node2GlobalsIndex ].VALUE.match(new RegExp('(' + variable1 + ')'));
+         if ( match !== null )
+         {
+            return true;
+         }
       }
    }
    return false;
@@ -379,7 +443,7 @@ function doGlobalVariableSearch()
       // Search all files for the variable in the values of the record
       for ( let fileIndex = 0; fileIndex < nodes.length; fileIndex++ )
       {
-         if ( searchForUnusedGlobal( node0GlobalsIndex, node0, nodes[ fileIndex ] ) == true )
+         if ( searchForUnusedGlobal( node0GlobalsIndex, node0, nodes[ fileIndex ], fileIndex ) == true )
          {
             rc = true;
 
@@ -409,10 +473,14 @@ readInFile();
 
 if ( doVariables == true)
 {
-  doGlobalVariableSearch();
+   if ( doDebug == true )
+      console.debug("Comparing file variables");
+   doGlobalVariableSearch();
 }
 if ( doDiff == true )
 {
+   if ( doDebug == true )
+      console.debug("Comparing file differences");
    compareFiles();
 }
 process.exit(0);

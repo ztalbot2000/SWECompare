@@ -187,3 +187,38 @@ run node ../SWECompare -v testData/missingGlobal.txt testData/foundGlobal.txt
    assert_equal "${#lines[@]}" 5
 }
 
+@test "Test a file comments without debug " {
+run node ../SWECompare -v testData/commentAtFirstLineFromWindows.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/commentAtFirstLineFromWindows.txt"
+   assert_equal "${lines[1]}" "Reading file: testData/commentAtFirstLineFromWindows.txt"
+   assert_equal "${lines[2]}" "No unused globals found"
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 3
+}
+
+@test "Test a file comments with debug " {
+run node ../SWECompare -v -debug testData/commentAtFirstLineFromWindows.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/commentAtFirstLineFromWindows.txt"
+   assert_equal "${lines[1]}" "Reading file: testData/commentAtFirstLineFromWindows.txt"
+   assert_equal "${lines[2]}" "shifting nodes[0] a file comment line"
+   assert_equal "${lines[3]}" "pushing nodes[0] a file comment line"
+   assert_equal "${lines[4]}" "pushing nodes[0] VARIABLE: \"V1 BottomOfLowerRail\", VALUE:  \"LegHeight\", COMMENT: "
+   assert_equal "${lines[5]}" "pushing nodes[0] a file comment line"
+   assert_equal "${lines[6]}" "pushing nodes[0] VARIABLE: \"RailThickness\", VALUE:  .125in, COMMENT: 'Spec"
+   assert_equal "${lines[7]}" "pushing nodes[0] VARIABLE: \"D1@LeftSideHoles-Sketch3\", VALUE: \"V1 BottomOfLowerRail\", COMMENT: "
+   assert_equal "${lines[8]}" "pushing nodes[0] VARIABLE: \"D2@Rails\", VALUE: \"RailThickness\", COMMENT: "
+   assert_equal "${lines[9]}" "Comparing file variables"
+   assert_equal "${lines[10]}" "searchForUnusedGlobal: Ignoring FILECOMMENT"
+   assert_equal "${lines[11]}" "searchForUnusedGlobal: Ignoring FILECOMMENT in testData/commentAtFirstLineFromWindows.txt line: 0 COMMENT: # From VerticalSupportYardStickEquations.txt"
+   assert_equal "${lines[12]}" "searchForUnusedGlobal: Ignoring FILECOMMENT in testData/commentAtFirstLineFromWindows.txt line: 2 COMMENT: # From BackLeftVerticalSupportEquations.txt"
+   assert_equal "${lines[13]}" "searchForUnusedGlobal: Ignoring FILECOMMENT"
+   assert_equal "${lines[14]}" "searchForUnusedGlobal: Ignoring FILECOMMENT in testData/commentAtFirstLineFromWindows.txt line: 0 COMMENT: # From VerticalSupportYardStickEquations.txt"
+   assert_equal "${lines[15]}" "searchForUnusedGlobal: Ignoring FILECOMMENT in testData/commentAtFirstLineFromWindows.txt line: 2 COMMENT: # From BackLeftVerticalSupportEquations.txt"
+   assert_equal "${lines[16]}" "No unused globals found"
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 17
+}
+
+
