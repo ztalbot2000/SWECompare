@@ -20,12 +20,14 @@ var doReverse = false;        // default
 var doVariables = false;
 var doDiff = false;
 var doLinkedValues = false;
+var doDuplicates = false;
 var doDebug = false;
 
 var foundCount = 0;
 var errorCount = 0;
 const FILECOMMENT = "FILECOMMENT";
 const LINKEDVALUE = "LINKEDVALUE";
+const ALREADYMATCHED = "ALREADYMATCHED";
 
 // A great regex debugger site:
 // https://regex101.com/r/bE3c0x/5
@@ -52,16 +54,28 @@ function processOpts()
              console.error( `-v and -d are mutually exclusive` );
              process.exit( 1 );
           }
+          if ( doDuplicates == true )
+          {
+             console.error( `-v and -dup are mutually exclusive` );
+             process.exit( 1 );
+          }
           doVariables = true;
-          doDiff = false;
           break;
         case '-lv':
           doLinkedValues = true;
           break;
         case '-dup':
-          console.log(`Instead of -dup use the unix command:`);
-          console.log(`sort <equations.txt> | uniq -dc`);
-          process.exit(1);
+          if ( doVariables == true )
+          {
+             console.error( `-dup and -v are mutually exclusive` );
+             process.exit( 1 );
+          }
+          if ( doDiff == true )
+          {
+             console.error( `-dup and -d are mutually exclusive` );
+             process.exit( 1 );
+          }
+          doDuplicates = true;
           break;
         case '-d':
           if ( doVariables == true )
@@ -69,8 +83,12 @@ function processOpts()
              console.error( `-v and -d are mutually exclusive` );
              process.exit( 1 );
           }
+          if ( doDuplicates == true )
+          {
+             console.error( `-d and -dup are mutually exclusive` );
+             process.exit( 1 );
+          }
           doDiff = true;
-          doVariables = false;
           break;
         case '-debug':
           doDebug = true;
@@ -82,7 +100,7 @@ function processOpts()
           console.log(`  find unused variables in an equation file.`);
           console.log(``);
           console.log(`Usage:`);
-          console.log(`${process.argv[0]} [-d] [-v] [-ie] [-ic] [-nr] file1 file2 file3 ...`);
+          console.log(`${process.argv[0]} -d|-v|-dup  [-ie] [-ic] [-nr] file1 file2 file3 ...`);
           console.log(`   Where:`);
           console.log(`     -d  -find variables from file1 not in other files with different values (default).`);
           console.log(`        Options that affect -d only`);
@@ -94,20 +112,26 @@ function processOpts()
           console.log(`     -lv -find missing linked variables in a single file.`);
           console.log(`          Tries to solve stuff like "var1= var2" and var2 is not`);
           console.log(`          defined in the same file.`);
-          console.log(`    -dup -find duplicates in a single file.`);
-          console.log(`           As in a master equations file.`);
+          console.log(`    -dup -find duplicate variables in a single file.`);
+          console.log(`        Options that affect -dup only`);
+          console.log(`           -ie -Include equations values in differences.`);
+          console.log(`           -ic -Include comments in differences.`);
           console.log(``);
-          console.log(`Example1: Find global variable differences between files`);
-          console.log(`${process.argv[0]} file1 file2`);
-          console.log(``);
-          console.log(`Example2: Find global variable differences between multiple files`);
-          console.log(`${process.argv[0]} file1 file2 file2`);
-          console.log(``);
-          console.log(`Example3: Find unused variables in an equation file`);
+          console.log(`Example1: Find unused variables in an equation file`);
           console.log(`${process.argv[0]} -v file1`);
           console.log(``);
-          console.log(`Example2: Find unused variables in file1 that are not in file2 or file3`);
-          console.log(`${process.argv[0]} -v file1 file2 file3`);
+          console.log(`Example2: Find unused variables in equation file1 that are not in file2 or file3`);
+          console.log(`${process.argv[0]} -v file1 file2 file2`);
+          console.log(``);
+          console.log(`Example3: Find differences between equation files`);
+          console.log(`${process.argv[0]} -d file1 file2`);
+          console.log(``);
+          console.log(`Example4: Find differences in file1 and multiple files`);
+          console.log(`${process.argv[0]} -d file1 file2 file3`);
+          console.log(``);
+          console.log(`Example5: Find duplicate variables in a file including comments qand equations`);
+          console.log(`${process.argv[0]} -dup -ic -ie file`);
+          console.log(``);
           process.exit(0);
           break;
         default:
@@ -116,16 +140,10 @@ function processOpts()
       }
    }
 
-   // backward compability
-   if ( doVariables == false && doDiff == false && nodes.length == 1)
+   if ( doVariables == false && doDiff == false && doDuplicates == false )
    {
-      doVariables = true;
-   }
-
-   // Set the default if not specified
-   if ( doVariables == false && doDiff == false )
-   {
-      doDiff = true;
+      console.error( `You must specify either -d|-v|-dup`);
+      process.exit( 1 );
    }
 
    // diff has certain options, check them
@@ -141,7 +159,7 @@ function processOpts()
          console.error( `-lv not valid with -d`);
          process.exit( 1 );
       }
-      if ( doReverse == true && nodes.length !=2 )
+      if ( doReverse == true && nodes.length != 2 )
       {
          console.error( `-r only valid for two files`);
          process.exit( 1 );
@@ -152,6 +170,14 @@ function processOpts()
       if ( nodes.length < 1 )
       {
          console.error( `-v must specify at least one file`);
+         process.exit( 1 );
+      }
+   }
+   if ( doDuplicates == true )
+   {
+      if ( nodes.length != 1 )
+      {
+         console.error( `-dup must specify only one file`);
          process.exit( 1 );
       }
    }
@@ -430,6 +456,66 @@ function compareFiles()
       console.log(`Differences detected: ${ errorCount }`);
 }
 
+function findDuplicates()
+{
+   let node0 = nodes[ 0 ];
+   let node0Globals = nodes[ 0 ].GLOBALS;
+   let foundDuplicates = 0;
+
+   // do the first file to
+   for ( let primaryIndex = 0; primaryIndex < node0Globals.length; primaryIndex++ )
+   {
+      // Get the stuff to find from the primary search
+      let primaryVariable = node0.GLOBALS[ primaryIndex ].VARIABLE;
+      let primaryValue = node0.GLOBALS[ primaryIndex ].VALUE;
+      let primaryComment = node0.GLOBALS[ primaryIndex ].COMMENT;
+
+      if ( primaryVariable == FILECOMMENT )
+         continue;
+
+      // Get the stuff from the secondary search
+      for ( let secondaryIndex = 0; secondaryIndex < node0Globals.length; secondaryIndex++ )
+      {
+         if ( primaryIndex == secondaryIndex)
+            continue;
+
+         // Get the stuff to find from the secondary search
+         let secondaryVariable = node0.GLOBALS[ secondaryIndex ].VARIABLE;
+         let secondaryValue = node0.GLOBALS[ secondaryIndex ].VALUE;
+         let secondaryComment = node0.GLOBALS[ secondaryIndex ].COMMENT;
+
+         if ( secondaryVariable == FILECOMMENT )
+            continue;
+
+         if ( secondaryVariable == ALREADYMATCHED )
+            continue;
+
+         if ( primaryVariable == secondaryVariable )
+         {
+            foundDuplicates++;
+
+            console.warn( `${ primaryVariable } from line ${ primaryIndex +1 } duplicated on line ${ secondaryIndex +1 }` );
+            if ( includeEquations == true && primaryValue != secondaryValue )
+            {
+               console.warn( `${ primaryVariable } Equation on line ${ primaryIndex +1 } differs from line ${ secondaryIndex +1 }.`);
+               console.warn( `"${ primaryValue }" != "${ secondaryValue }"` );
+            }
+            if ( includeComments == true && primaryComment != secondaryComment )
+            {
+               console.warn( `${ primaryVariable } Comment on line ${ primaryIndex +1 } differs from line ${ secondaryIndex +1 }.`);
+               console.warn( `"${ primaryComment }" != "${ secondaryComment }"` );
+            }
+
+            node0.GLOBALS[ secondaryIndex ].VARIABLE = ALREADYMATCHED;
+         }
+
+      }
+
+   }
+
+   console.log(`${ foundDuplicates } duplicate(s) detected.`);
+}
+
 function searchForUnusedGlobal( node1GlobalsIndex, node1, node2, node2FileIndex )
 {
    let variable1 = node1.GLOBALS[ node1GlobalsIndex ].VARIABLE;
@@ -550,5 +636,12 @@ if ( doDiff == true )
       console.debug("Comparing file differences");
 
    compareFiles();
+}
+if ( doDuplicates == true )
+{
+   if ( doDebug == true )
+      console.debug("Checking for duplicate entries");
+
+   findDuplicates();
 }
 process.exit(0);

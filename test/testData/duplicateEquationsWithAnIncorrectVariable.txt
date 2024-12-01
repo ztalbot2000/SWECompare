@@ -1,0 +1,4 @@
+﻿"RailThickness"= 3.175mm'One eight inch
+"RailThickness"= 2.175mm'One eight inch
+"RailThickness"= 3.175mm'One eight nch
+"D2@RailThickness"="RailThickness"

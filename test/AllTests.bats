@@ -4,8 +4,17 @@ setup()
    _common_setup
 }
 
+@test "Test -d|-v|-dup not specified," {
+run node ../SWECompare testData/equations.txt
+   assert_equal "$status" 1
+   assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
+   assert_equal "${lines[1]}" "You must specify either -d|-v|-dup"
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 2
+}
+
 @test "Test Equations in two files are equal," {
-run node ../SWECompare testData/equations.txt testData/equations.txt
+run node ../SWECompare -d testData/equations.txt testData/equations.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equations.txt"
@@ -17,7 +26,7 @@ run node ../SWECompare testData/equations.txt testData/equations.txt
 }
 
 @test "Test Equations in two files. Second is missing a global," {
-run node ../SWECompare testData/equations.txt testData/equationsMissingGlobal.txt
+run node ../SWECompare -d testData/equations.txt testData/equationsMissingGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingGlobal.txt"
@@ -32,7 +41,7 @@ run node ../SWECompare testData/equations.txt testData/equationsMissingGlobal.tx
 }
 
 @test "Test Equations in two files, Second has Missing comment but -ic not specified" {
-run node ../SWECompare testData/equations.txt testData/equationsMissingComment.txt
+run node ../SWECompare -d testData/equations.txt testData/equationsMissingComment.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingComment.txt"
@@ -44,7 +53,7 @@ run node ../SWECompare testData/equations.txt testData/equationsMissingComment.t
 }
 
 @test "Test Equations in two files, Second has Missing comment and -ic specified" {
-run node ../SWECompare -ic testData/equations.txt testData/equationsMissingComment.txt
+run node ../SWECompare -d -ic testData/equations.txt testData/equationsMissingComment.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingComment.txt"
@@ -62,7 +71,7 @@ run node ../SWECompare -ic testData/equations.txt testData/equationsMissingComme
 }
 
 @test "Test Equations in two files, Second has different Global vaiable value" {
-run node ../SWECompare testData/equations.txt testData/equationsWithDifferentGlobal.txt
+run node ../SWECompare -d testData/equations.txt testData/equationsWithDifferentGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsWithDifferentGlobal.txt"
@@ -80,7 +89,7 @@ run node ../SWECompare testData/equations.txt testData/equationsWithDifferentGlo
 }
 
 @test "Test Equations in two files with -r, Second has different Global vaiable value" {
-run node ../SWECompare -r testData/equations.txt testData/equationsWithDifferentGlobal.txt
+run node ../SWECompare -d -r testData/equations.txt testData/equationsWithDifferentGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsWithDifferentGlobal.txt"
@@ -104,7 +113,7 @@ run node ../SWECompare -r testData/equations.txt testData/equationsWithDifferent
 }
 
 @test "Test Equations in two files, Second has missing \"D1@Something\"" {
-run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.txt
+run node ../SWECompare -d testData/equations.txt testData/equationsMissingEquation.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
@@ -116,7 +125,7 @@ run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.
 }
 
 @test "Test Equations in three files, Third finds variable " {
-run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.txt testData/equationsFoundGlobal.txt
+run node ../SWECompare -d testData/equations.txt testData/equationsMissingEquation.txt testData/equationsFoundGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
@@ -130,7 +139,7 @@ run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.
 }
 
 @test "Test Equations in four files, Fourth finds incorrect variable " {
-run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.txt testData/equationsFoundGlobal.txt testData/equationsFoundIncorrectGlobal.txt
+run node ../SWECompare -d testData/equations.txt testData/equationsMissingEquation.txt testData/equationsFoundGlobal.txt testData/equationsFoundIncorrectGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
@@ -151,8 +160,8 @@ run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.
    assert_equal "${#lines[@]}" 15
 }
 
-@test "Test a Missing Global in a file" {
-run node ../SWECompare testData/missingGlobal2.txt
+@test "Test for Unused Globals in a file" {
+run node ../SWECompare -v testData/missingGlobal2.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/missingGlobal2.txt"
    assert_equal "${lines[1]}" "Reading file: testData/missingGlobal2.txt"
@@ -163,8 +172,8 @@ run node ../SWECompare testData/missingGlobal2.txt
    assert_equal "${#lines[@]}" 5
 }
 
-@test "Test a Missing Global in a file Global in \"d1@Something\" spelled incorrectly" {
-run node ../SWECompare testData/missingGlobal.txt
+@test "Test for Unused Globals in a file spelled incorrectly" {
+run node ../SWECompare -v testData/missingGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/missingGlobal.txt"
    assert_equal "${lines[1]}" "Reading file: testData/missingGlobal.txt"
@@ -175,7 +184,7 @@ run node ../SWECompare testData/missingGlobal.txt
    assert_equal "${#lines[@]}" 5
 }
 
-@test "Test a Missing Global in a file but found in another" {
+@test "Test for a Missing Global in a file but found in another" {
 run node ../SWECompare -v testData/missingGlobal.txt testData/foundGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/missingGlobal.txt"
@@ -187,7 +196,7 @@ run node ../SWECompare -v testData/missingGlobal.txt testData/foundGlobal.txt
    assert_equal "${#lines[@]}" 5
 }
 
-@test "Test a file comments without debug " {
+@test "Test for a Missing Global containing file comments without debug " {
 run node ../SWECompare -v testData/commentAtFirstLineFromWindows.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/commentAtFirstLineFromWindows.txt"
@@ -197,7 +206,7 @@ run node ../SWECompare -v testData/commentAtFirstLineFromWindows.txt
    assert_equal "${#lines[@]}" 3
 }
 
-@test "Test a file comments with debug " {
+@test "Test for a Missig Global containing file comments with debug " {
 run node ../SWECompare -v -debug testData/commentAtFirstLineFromWindows.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/commentAtFirstLineFromWindows.txt"
@@ -222,7 +231,7 @@ run node ../SWECompare -v -debug testData/commentAtFirstLineFromWindows.txt
 }
 
 
-@test "Test a file with linked values" {
+@test "Test for Unused globals with linked values" {
 run node ../SWECompare -v -lv testData/linkedValues.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/linkedValues.txt"
@@ -243,5 +252,48 @@ run node ../SWECompare -v -lv testData/linkedValuesWithMissingDefinitions.txt
    # No more lines than expected
    assert_equal "${#lines[@]}" 5
 }
+
+@test "Test a file with no duplicate variables equations or comments" {
+run node ../SWECompare -dup -ic -ie testData/equations.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
+   assert_equal "${lines[1]}" "Reading file: testData/equations.txt"
+   assert_equal "${lines[2]}" "0 duplicate(s) detected."
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 3
+}
+
+@test "Test a file with duplicate variables" {
+run node ../SWECompare -dup -ic -ie testData/duplicateEquations.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/duplicateEquations.txt"
+   assert_equal "${lines[1]}" "Reading file: testData/duplicateEquations.txt"
+   assert_equal "${lines[2]}" "\"RailThickness\" from line 1 duplicated on line 2"
+   assert_equal "${lines[3]}" "\"RailThickness\" from line 1 duplicated on line 3"
+   assert_equal "${lines[4]}" "2 duplicate(s) detected."
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 5
+}
+
+@test "Test a file with duplicate variables and incorrect equations/comments" {
+run node ../SWECompare -dup -ic -ie testData/duplicateEquationsWithAnIncorrectVariable.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/duplicateEquationsWithAnIncorrectVariable.txt"
+   assert_equal "${lines[1]}" "Reading file: testData/duplicateEquationsWithAnIncorrectVariable.txt"
+   assert_equal "${lines[2]}" "\"RailThickness\" from line 1 duplicated on line 2"
+   assert_equal "${lines[3]}" "\"RailThickness\" Equation on line 1 differs from line 2."
+   assert_equal "${lines[4]}" "\" 3.175mm\" != \" 2.175mm\""
+   assert_equal "${lines[5]}" "\"RailThickness\" from line 1 duplicated on line 3"
+   assert_equal "${lines[6]}" "\"RailThickness\" Comment on line 1 differs from line 3."
+   assert_equal "${lines[7]}" "\"'One eight inch\" != \"'One eight nch\""
+   assert_equal "${lines[8]}" "2 duplicate(s) detected."
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 9
+}
+
+
+
+
+
 
 

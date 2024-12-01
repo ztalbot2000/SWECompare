@@ -1,5 +1,4 @@
-﻿"blast"= 2
-"RailThickness"= 3.175mm
+﻿"RailThickness"= 3.175mm
 "RailThickness"= 3.175mm
 "RailThickness"= 3.175mm
 "D2@RailThickness"="RailThickness"
