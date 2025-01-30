@@ -14,14 +14,13 @@ let fs = require("fs");
 //                    }
 //                   ];
 var nodes=[];
-var includeComments = false;  // default
+var includeComments = true;   // default
 var includeEquations = false; // default
 var doReverse = false;        // default
-var doVariables = false;
-var doDiff = false;
-var doLinkedValues = false;
-var doDuplicates = false;
-var doDebug = false;
+var doLinkedValues = false;   // default
+var doDebug = false;          // default
+
+var command = "";
 
 var foundCount = 0;
 var errorCount = 0;
@@ -39,8 +38,8 @@ function processOpts()
    {
       switch (process.argv[index])
       {
-        case '-ic':
-          includeComments = true;
+        case '-nc':
+          includeComments = false;
           break;
         case '-ie':
           includeEquations = true;
@@ -49,46 +48,31 @@ function processOpts()
           doReverse = true;
           break;
         case '-v':
-          if ( doDiff == true )
+          if ( command != "" )
           {
-             console.error( `-v and -d are mutually exclusive` );
+             console.error( `-v and ${command} are mutually exclusive` );
              process.exit( 1 );
           }
-          if ( doDuplicates == true )
-          {
-             console.error( `-v and -dup are mutually exclusive` );
-             process.exit( 1 );
-          }
-          doVariables = true;
+          command = process.argv[index];
           break;
         case '-lv':
           doLinkedValues = true;
           break;
         case '-dup':
-          if ( doVariables == true )
+          if ( command != "" )
           {
-             console.error( `-dup and -v are mutually exclusive` );
+             console.error( `-dup and ${ command}  are mutually exclusive` );
              process.exit( 1 );
           }
-          if ( doDiff == true )
-          {
-             console.error( `-dup and -d are mutually exclusive` );
-             process.exit( 1 );
-          }
-          doDuplicates = true;
+          command = process.argv[index];
           break;
         case '-d':
-          if ( doVariables == true )
+          if ( command != "" )
           {
-             console.error( `-v and -d are mutually exclusive` );
+             console.error( `-d and ${ command} are mutually exclusive` );
              process.exit( 1 );
           }
-          if ( doDuplicates == true )
-          {
-             console.error( `-d and -dup are mutually exclusive` );
-             process.exit( 1 );
-          }
-          doDiff = true;
+          command = process.argv[index];
           break;
         case '-debug':
           doDebug = true;
@@ -100,25 +84,31 @@ function processOpts()
           console.log(`  find unused variables in an equation file.`);
           console.log(``);
           console.log(`Usage:`);
-          console.log(`${process.argv[0]} -d|-v|-dup  [-ie] [-ic] [-nr] file1 file2 file3 ...`);
+          console.log(`${process.argv[0]} [-d|-v|-dup] [-ne] [-nc] [-lv] [-r] file1 file2 file3 ...`);
+          console.log(`Default is ${process.argv[0]} -v`);
+          console.log(`Options:`);
+          console.log(`   -ie -Include equations (Variables like "d1@Something"`);
+          console.log(`   -nc -No comments differences will be considered.`);
+          console.log(`   -r  -Check file1 vs file2 and file2 vs file1`);
+          console.log(`        Valid with -d only.`);
+          console.log(`   -lv -find missing linked variables in a single file.`);
+          console.log(`        Tries to solve stuff like "var1= var2" and var2 is not`);
+          console.log(`        defined in the same file.`);
           console.log(`   Where:`);
-          console.log(`     -d  -find variables from file1 not in other files with different values (default).`);
-          console.log(`        Options that affect -d only`);
-          console.log(`           -ie -Include equations (Variables like "d1@Something"`);
-          console.log(`           -ic -Include comments in differences.`);
+          console.log(``);
+          console.log(`     -d  -find variables from file1 not in other files with different values.`);
+          console.log(`        Options that affect -d only:`);
           console.log(`           -r  -Check file1 vs file2 and file2 vs file1`);
           console.log(`                Valid for when only two files are specified`);
           console.log(`     -v  -find missing variables from file1 not in other files`);
-          console.log(`     -lv -find missing linked variables in a single file.`);
-          console.log(`          Tries to solve stuff like "var1= var2" and var2 is not`);
-          console.log(`          defined in the same file.`);
+          console.log(`        Options that affect -v only:`);
+          console.log(`           -lv -find missing linked variables in a single file.`);
           console.log(`    -dup -find duplicate variables in a single file.`);
-          console.log(`        Options that affect -dup only`);
-          console.log(`           -ie -Include equations values in differences.`);
-          console.log(`           -ic -Include comments in differences.`);
           console.log(``);
           console.log(`Example1: Find unused variables in an equation file`);
           console.log(`${process.argv[0]} -v file1`);
+          console.log(`Or just`);
+          console.log(`${process.argv[0]}    file1`);
           console.log(``);
           console.log(`Example2: Find unused variables in equation file1 that are not in file2 or file3`);
           console.log(`${process.argv[0]} -v file1 file2 file2`);
@@ -129,8 +119,8 @@ function processOpts()
           console.log(`Example4: Find differences in file1 and multiple files`);
           console.log(`${process.argv[0]} -d file1 file2 file3`);
           console.log(``);
-          console.log(`Example5: Find duplicate variables in a file including comments qand equations`);
-          console.log(`${process.argv[0]} -dup -ic -ie file`);
+          console.log(`Example5: Find duplicate variables in a file ignoring comment differences`);
+          console.log(`${process.argv[0]} -dup -nc file`);
           console.log(``);
           process.exit(0);
           break;
@@ -140,44 +130,53 @@ function processOpts()
       }
    }
 
-   if ( doVariables == false && doDiff == false && doDuplicates == false )
+   if ( command == "" && nodes.length == 1 )
    {
-      console.error( `You must specify either -d|-v|-dup`);
-      process.exit( 1 );
+      command = "-v";
+   }
+
+   if ( command == "" )
+   {
+      command = "-d";
    }
 
    // diff has certain options, check them
-   if ( doDiff == true )
+   if ( command == "-d" )
    {
       if ( nodes.length < 2 )
       {
          console.error( `-d must specify at least two files`);
          process.exit( 1 );
       }
-      if ( doLinkedValues == true )
-      {
-         console.error( `-lv not valid with -d`);
-         process.exit( 1 );
-      }
-      if ( doReverse == true && nodes.length != 2 )
+      if ( doReverse == true && nodes.length !=2 )
       {
          console.error( `-r only valid for two files`);
          process.exit( 1 );
       }
    }
-   if ( doVariables == true )
+   if ( command == "-v" )
    {
       if ( nodes.length < 1 )
       {
          console.error( `-v must specify at least one file`);
          process.exit( 1 );
       }
+      if ( doReverse == true )
+      {
+         console.error( `-r only valid with -d`);
+         process.exit( 1 );
+      }
    }
-   if ( doDuplicates == true )
+   if ( command == "-dup" )
    {
       if ( nodes.length != 1 )
       {
          console.error( `-dup must specify only one file`);
+         process.exit( 1 );
+      }
+      if ( doReverse == true )
+      {
+         console.error( `-r only valid with -d`);
          process.exit( 1 );
       }
    }
@@ -623,21 +622,32 @@ function doGlobalVariableSearch()
 processOpts();
 readInFile();
 
-if ( doVariables == true)
+if ( command == "-v" )
 {
    if ( doDebug == true )
       console.debug("Comparing file variables");
 
    doGlobalVariableSearch();
 }
-if ( doDiff == true )
+if ( command == "-d" )
 {
+   if ( doLinkedValues == true )
+   {
+      console.error( `-lv not valid with -d`);
+      process.exit( 1 );
+   }
+   if ( doReverse == true && nodes.length != 2 )
+   {
+      console.error( `-r only valid for two files`);
+      process.exit( 1 );
+   }
+
    if ( doDebug == true )
       console.debug("Comparing file differences");
 
    compareFiles();
 }
-if ( doDuplicates == true )
+if ( command == "-dup" )
 {
    if ( doDebug == true )
       console.debug("Checking for duplicate entries");

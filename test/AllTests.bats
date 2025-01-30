@@ -4,17 +4,8 @@ setup()
    _common_setup
 }
 
-@test "Test -d|-v|-dup not specified," {
-run node ../SWECompare testData/equations.txt
-   assert_equal "$status" 1
-   assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
-   assert_equal "${lines[1]}" "You must specify either -d|-v|-dup"
-   # No more lines than expected
-   assert_equal "${#lines[@]}" 2
-}
-
 @test "Test Equations in two files are equal," {
-run node ../SWECompare -d testData/equations.txt testData/equations.txt
+run node ../SWECompare testData/equations.txt testData/equations.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equations.txt"
@@ -26,7 +17,7 @@ run node ../SWECompare -d testData/equations.txt testData/equations.txt
 }
 
 @test "Test Equations in two files. Second is missing a global," {
-run node ../SWECompare -d testData/equations.txt testData/equationsMissingGlobal.txt
+run node ../SWECompare testData/equations.txt testData/equationsMissingGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingGlobal.txt"
@@ -40,8 +31,8 @@ run node ../SWECompare -d testData/equations.txt testData/equationsMissingGlobal
    assert_equal "${#lines[@]}" 8
 }
 
-@test "Test Equations in two files, Second has Missing comment but -ic not specified" {
-run node ../SWECompare -d testData/equations.txt testData/equationsMissingComment.txt
+@test "Test Equations in two files, Second has Missing comment but -nc specified" {
+run node ../SWECompare -nc testData/equations.txt testData/equationsMissingComment.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingComment.txt"
@@ -52,8 +43,8 @@ run node ../SWECompare -d testData/equations.txt testData/equationsMissingCommen
    assert_equal "${#lines[@]}" 5
 }
 
-@test "Test Equations in two files, Second has Missing comment and -ic specified" {
-run node ../SWECompare -d -ic testData/equations.txt testData/equationsMissingComment.txt
+@test "Test Equations in two files, Second has Missing comment and -nc not specified" {
+run node ../SWECompare testData/equations.txt testData/equationsMissingComment.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingComment.txt"
@@ -71,7 +62,7 @@ run node ../SWECompare -d -ic testData/equations.txt testData/equationsMissingCo
 }
 
 @test "Test Equations in two files, Second has different Global vaiable value" {
-run node ../SWECompare -d testData/equations.txt testData/equationsWithDifferentGlobal.txt
+run node ../SWECompare testData/equations.txt testData/equationsWithDifferentGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsWithDifferentGlobal.txt"
@@ -112,8 +103,8 @@ run node ../SWECompare -d -r testData/equations.txt testData/equationsWithDiffer
    assert_equal "${#lines[@]}" 17
 }
 
-@test "Test Equations in two files, Second has missing \"D1@Something\"" {
-run node ../SWECompare -d testData/equations.txt testData/equationsMissingEquation.txt
+@test "Test Equations in two files, Second has missing \"D1@Something\" but -ie not specified" {
+run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
@@ -124,8 +115,23 @@ run node ../SWECompare -d testData/equations.txt testData/equationsMissingEquati
    assert_equal "${#lines[@]}" 5
 }
 
+@test "Test Equations in two files, Second has missing \"D1@Something\" but -ie specified" {
+run node ../SWECompare -ie testData/equations.txt testData/equationsMissingEquation.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
+   assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
+   assert_equal "${lines[2]}" "Reading file: testData/equations.txt"
+   assert_equal "${lines[3]}" "Reading file: testData/equationsMissingEquation.txt"
+   assert_equal "${lines[4]}" "Around line number: 62 of testData/equations.txt"
+   assert_equal "${lines[5]}" "variable: \"D7@CornerrSketch1\" not found in testData/equationsMissingEquation.txt"
+   assert_equal "${lines[6]}" "expected value: \"BedLShortSide\""
+   assert_equal "${lines[7]}" "Differences detected: 1"
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 8
+}
+
 @test "Test Equations in three files, Third finds variable " {
-run node ../SWECompare -d testData/equations.txt testData/equationsMissingEquation.txt testData/equationsFoundGlobal.txt
+run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.txt testData/equationsFoundGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
@@ -139,7 +145,7 @@ run node ../SWECompare -d testData/equations.txt testData/equationsMissingEquati
 }
 
 @test "Test Equations in four files, Fourth finds incorrect variable " {
-run node ../SWECompare -d testData/equations.txt testData/equationsMissingEquation.txt testData/equationsFoundGlobal.txt testData/equationsFoundIncorrectGlobal.txt
+run node ../SWECompare testData/equations.txt testData/equationsMissingEquation.txt testData/equationsFoundGlobal.txt testData/equationsFoundIncorrectGlobal.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
@@ -242,7 +248,7 @@ run node ../SWECompare -v -lv testData/linkedValues.txt
 }
 
 @test "Test a file with missing linked values" {
-run node ../SWECompare -v -lv testData/linkedValuesWithMissingDefinitions.txt
+run node ../SWECompare -lv testData/linkedValuesWithMissingDefinitions.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/linkedValuesWithMissingDefinitions.txt"
    assert_equal "${lines[1]}" "Reading file: testData/linkedValuesWithMissingDefinitions.txt"
@@ -254,7 +260,7 @@ run node ../SWECompare -v -lv testData/linkedValuesWithMissingDefinitions.txt
 }
 
 @test "Test a file with no duplicate variables equations or comments" {
-run node ../SWECompare -dup -ic -ie testData/equations.txt
+run node ../SWECompare -dup testData/equations.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
    assert_equal "${lines[1]}" "Reading file: testData/equations.txt"
@@ -264,7 +270,7 @@ run node ../SWECompare -dup -ic -ie testData/equations.txt
 }
 
 @test "Test a file with duplicate variables" {
-run node ../SWECompare -dup -ic -ie testData/duplicateEquations.txt
+run node ../SWECompare -dup testData/duplicateEquations.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/duplicateEquations.txt"
    assert_equal "${lines[1]}" "Reading file: testData/duplicateEquations.txt"
@@ -276,7 +282,7 @@ run node ../SWECompare -dup -ic -ie testData/duplicateEquations.txt
 }
 
 @test "Test a file with duplicate variables and incorrect equations/comments" {
-run node ../SWECompare -dup -ic -ie testData/duplicateEquationsWithAnIncorrectVariable.txt
+run node ../SWECompare -dup -ie testData/duplicateEquationsWithAnIncorrectVariable.txt
    assert_equal "$status" 0
    assert_equal "${lines[0]}" "Adding file: testData/duplicateEquationsWithAnIncorrectVariable.txt"
    assert_equal "${lines[1]}" "Reading file: testData/duplicateEquationsWithAnIncorrectVariable.txt"
@@ -292,8 +298,17 @@ run node ../SWECompare -dup -ic -ie testData/duplicateEquationsWithAnIncorrectVa
 }
 
 
-
-
-
-
-
+@test "Test if variable in first file not found in second" {
+run node ../SWECompare testData/equations.txt -ie testData/equationsMissingEquation.txt
+   assert_equal "$status" 0
+   assert_equal "${lines[0]}" "Adding file: testData/equations.txt"
+   assert_equal "${lines[1]}" "Adding file: testData/equationsMissingEquation.txt"
+   assert_equal "${lines[2]}" "Reading file: testData/equations.txt"
+   assert_equal "${lines[3]}" "Reading file: testData/equationsMissingEquation.txt"
+   assert_equal "${lines[4]}" "Around line number: 62 of testData/equations.txt"
+   assert_equal "${lines[5]}" "variable: \"D7@CornerrSketch1\" not found in testData/equationsMissingEquation.txt"
+   assert_equal "${lines[6]}" "expected value: \"BedLShortSide\""
+   assert_equal "${lines[7]}" "Differences detected: 1"
+   # No more lines than expected
+   assert_equal "${#lines[@]}" 8
+}
